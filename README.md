@@ -1,7 +1,7 @@
-wwwhisper-rack
+rack-wwwhisper
 ==============
 
-Rack middleware that uses wwwhisper service to authorize access to a site.
+Rack middleware that uses wwwhisper service to authorize visitors.
 
 Work in progress.
 

@@ -7,7 +7,7 @@
 require 'rack/test'
 require 'test/unit'
 require 'webmock/test_unit'
-require 'wwwhisper'
+require 'rack/wwwhisper'
 
 ENV['RACK_ENV'] = 'test'
 
@@ -35,7 +35,7 @@ class TestWWWhisper < Test::Unit::TestCase
     @backend = MockBackend.new()
     ENV['WWWHISPER_URL'] = WWWHISPER_URL
     ENV['WWWHISPER_ASSETS_URL'] = WWWHISPER_ASSETS_URL
-    @wwwhisper = WWWhisper.new(@backend)
+    @wwwhisper = Rack::WWWhisper.new(@backend)
   end
 
   def app
@@ -53,7 +53,7 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_wwwhisper_url_required
     ENV.delete('WWWHISPER_URL')
     assert_raise(StandardError) {
-      WWWhisper.new(@backend)
+      Rack::WWWhisper.new(@backend)
     }
   end
 

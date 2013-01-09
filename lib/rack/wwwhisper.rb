@@ -8,6 +8,8 @@ require 'addressable/uri'
 require 'net/http/persistent'
 require 'rack/utils'
 
+module Rack
+
 class WWWhisper
   @@DEFAULT_ASSETS_URL = 'https://c693db817dca7e162673-39ba3573e09a1fa9bea151a745461b70.ssl.cf1.rackcdn.com'
   @@WWWHISPER_PREFIX = '/wwwhisper/'
@@ -259,5 +261,7 @@ class WWWhisper
   def debug(req, message)
     req.logger.debug "wwwhisper #{message}" if req.logger
   end
+
+end
 
 end
