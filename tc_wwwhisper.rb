@@ -1,3 +1,9 @@
+# Rack middleware that uses wwwhisper service to authorize visitors.
+# Copyright (C) 2013 Jan Wrobel <wrr@mixedbit.org>
+#
+# This program is freely distributable under the terms of the
+# Simplified BSD License. See COPYING.
+
 require 'rack/test'
 require 'test/unit'
 require 'webmock/test_unit'

@@ -1,3 +1,9 @@
+# Rack middleware that uses wwwhisper service to authorize visitors.
+# Copyright (C) 2013 Jan Wrobel <wrr@mixedbit.org>
+#
+# This program is freely distributable under the terms of the
+# Simplified BSD License. See COPYING.
+
 require 'addressable/uri'
 require 'net/http/persistent'
 require 'rack/utils'
@@ -56,7 +62,7 @@ class WWWhisper
       'auth/logout' => 'auth/logout.html',
       'admin/' => 'admin/index.html',
     }.each do |k, v|
-      @aliases[wwwhisper_path k] = wwwhisper_path v
+      @aliases[wwwhisper_path(k)] = wwwhisper_path(v)
     end
   end
 
