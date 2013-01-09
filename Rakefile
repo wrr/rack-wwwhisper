@@ -7,3 +7,6 @@ end
 desc "Run tests"
 task :default => :test
 
+task :gem do
+  sh "gem build rack-wwwhisper.gemspec"
+end
