@@ -1,0 +1,11 @@
+source :rubygems
+gem 'sinatra', '1.1.0'
+gem 'thin'
+gem 'rack'
+gem 'webmock'
+gem 'rack-test'
+gem 'addressable'
+gem 'net-http-persistent'
+#gem 'openssl'
+#gem 'ssl_certifier'
+#gem 'rack-proxy'
