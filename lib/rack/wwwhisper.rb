@@ -33,6 +33,7 @@ class WWWhisper
 
     @wwwhisper_iframe = ENV['WWWHISPER_IFRAME'] ||
       sprintf(@@DEFAULT_IFRAME, wwwhisper_path('auth/overlay.html'))
+    @wwwhisper_iframe_bytesize = Rack::Utils::bytesize(@wwwhisper_iframe)
 
     @request_config = {
       :auth => {
@@ -76,12 +77,47 @@ class WWWhisper
     wwwhisper_path "auth/api/is-authorized/?path=#{queried_path}"
   end
 
-  def auth_login_path()
-    wwwhisper_path 'auth/login.html'
+  def call(env)
+    req = Rack::Request.new(env)
+
+    normalize_path req
+
+    if req.path =~ %r{^#{@@WWWHISPER_PREFIX}auth}
+      # Requests to /@@WWWHISPER_PREFIX/auth/ should not be authorized,
+      # every visitor can access login pages.
+      return dispatch(req)
+    end
+
+    debug req, "sending auth request for #{req.path}"
+    auth_status, auth_headers, auth_body = wwwhisper_auth_request(req)
+
+    case auth_status
+    when 200
+      debug req, "access granted"
+      status, headers, body = dispatch(req)
+      if should_inject_iframe(status, headers)
+        body = inject_iframe(headers, body)
+      end
+      [status, headers, body]
+    when 401, 403
+      login_needed = (auth_status == 401)
+      debug req,  login_needed ? "user not authenticated" : "access_denied"
+      [auth_status, auth_headers, auth_body]
+    else
+      debug req, "auth request failed"
+      [auth_status, auth_headers, auth_body]
+    end
   end
 
-  def auth_denied_path()
-    wwwhisper_path 'auth/not_authorized.html'
+  private
+
+  def debug(req, message)
+    req.logger.debug "wwwhisper #{message}" if req.logger
+  end
+
+  def normalize_path(req)
+    req.script_name = Addressable::URI.normalize_path(req.script_name)
+    req.path_info = Addressable::URI.normalize_path(req.path_info)
   end
 
   def parse_uri(uri)
@@ -90,15 +126,6 @@ class WWWhisper
     # https connections which is counterintuitive.
     parsed_uri.port ||= parsed_uri.default_port
     parsed_uri
-  end
-
-  def http_init(connection_id)
-    http = Net::HTTP::Persistent.new(connection_id)
-    store = OpenSSL::X509::Store.new()
-    store.set_default_paths
-    http.cert_store = store
-    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    return http
   end
 
   def default_port(proto)
@@ -125,141 +152,123 @@ class WWWhisper
     "#{proto}://#{host}#{port_str}"
   end
 
-  def request_init(config, env, method, path)
+  def http_init(connection_id)
+    http = Net::HTTP::Persistent.new(connection_id)
+    store = OpenSSL::X509::Store.new()
+    store.set_default_paths
+    http.cert_store = store
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    return http
+  end
+
+  def sub_request_init(config, rack_req, method, path)
     path = @aliases[path] || path
-    request = Net::HTTP.const_get(method).new(path)
-    copy_headers(config[:forwarded_headers], env, request)
-    request['Site-Url'] = site_url(env) if config[:send_site_url]
+    sub_req = Net::HTTP.const_get(method).new(path)
+    copy_headers(config[:forwarded_headers], rack_req.env, sub_req)
+    sub_req['Site-Url'] = site_url(rack_req.env) if config[:send_site_url]
     uri = config[:uri]
-    request.basic_auth(uri.user, uri.password) if uri.user and uri.password
-    request
+    sub_req.basic_auth(uri.user, uri.password) if uri.user and uri.password
+    sub_req
   end
 
   def has_value(dict, key)
     dict[key] != nil and !dict[key].empty?
   end
 
-  def copy_headers(headers_names, env, request)
+  def copy_headers(headers_names, env, sub_req)
     headers_names.each do |header|
       key = "HTTP_#{header.upcase}".gsub(/-/, '_')
-      request[header] = env[key] if has_value(env, key)
-      #puts "Sending header #{header} #{request[header]} #{key} #{env[key]}"
+      sub_req[header] = env[key] if has_value(env, key)
     end
   end
 
-  def copy_body(src_request, dst_request)
-    if dst_request.request_body_permitted? and src_request.body
-      dst_request.body_stream = src_request.body
-      dst_request.content_length = src_request.content_length
-      dst_request.content_type =
-        src_request.content_type if src_request.content_type
+  def copy_body(rack_req, sub_req)
+    if sub_req.request_body_permitted? and rack_req.body and
+        (rack_req.content_length or
+         rack_req.env['HTTP_TRANSFER_ENCODING'] == 'chunked')
+      sub_req.body_stream = rack_req.body
+      sub_req.content_length =
+        rack_req.content_length if rack_req.content_length
+      sub_req.content_type = rack_req.content_type if rack_req.content_type
     end
   end
 
-  def extract_headers(env, response)
-    headers = Rack::Utils::HeaderHash.new()
-    response.each_capitalized do |k,v|
-      #puts "Header #{k} VAL #{v}"
-      if k.to_s =~ /location/i
-        location = Addressable::URI.parse(v)
-        location.scheme, location.host, location.port = proto_host_port(env)
-        v = location.to_s
+  def sub_response_headers_to_rack(rack_req, sub_resp)
+    rack_headers = Rack::Utils::HeaderHash.new()
+    sub_resp.each_capitalized do |header, value|
+      if header == 'Location'
+        location = Addressable::URI.parse(value)
+        location.scheme, location.host, location.port =
+          proto_host_port(rack_req.env)
+        value = location.to_s
       end
-      # Transfer encoding and content-length are set correctly by Rack.
-      # TODO: what is transfer encoding?
-      headers[k] = v unless k.to_s =~ /transfer-encoding|content-length/i
+      rack_headers[header] = value
     end
-    return headers
+    return rack_headers
   end
 
-  def dispatch(env)
-    orig_request = Rack::Request.new(env)
-    if orig_request.path =~ %r{^#{@@WWWHISPER_PREFIX}}
-      debug orig_request, "passing request to wwwhisper service"
+  def sub_response_to_rack(rack_req, sub_resp)
+    [
+     sub_resp.code.to_i,
+     sub_response_headers_to_rack(rack_req, sub_resp),
+     [(sub_resp.read_body() or '')]
+    ]
+  end
+
+  def wwwhisper_auth_request(req)
+    config = @request_config[:auth]
+    auth_req = sub_request_init(config, req, 'Get', auth_query(req.path))
+    auth_resp = config[:http].request(config[:uri], auth_req)
+    sub_response_to_rack(req, auth_resp)
+  end
+
+  def should_inject_iframe(status, headers)
+    # Do not attempt to inject iframe if result is already chunked,
+    # compressed or checksummed.
+    (status == 200 and
+     headers['Content-Type'] =~ /text\/html/i and
+     not headers['Transfer-Encoding'] and
+     not headers['Content-Range'] and
+     not headers['Content-Encoding'] and
+     not headers['Content-MD5']
+     )
+  end
+
+  def inject_iframe(headers, body)
+    total = []
+    body.each { |part|
+      total << part
+    }
+    total = total.join()
+    if idx = total.rindex('</body>')
+      total.insert(idx, @wwwhisper_iframe)
+      headers['Content-Length'] &&= (headers['Content-Length'].to_i +
+                                     @wwwhisper_iframe_bytesize).to_s
+    end
+    [total]
+  end
+
+  def dispatch(orig_req)
+    if orig_req.path =~ %r{^#{@@WWWHISPER_PREFIX}}
+      debug orig_req, "passing request to wwwhisper service #{orig_req.path}"
 
       config =
-        if orig_request.path =~ %r{^#{@@WWWHISPER_PREFIX}(auth|admin)/api/}
+        if orig_req.path =~ %r{^#{@@WWWHISPER_PREFIX}(auth|admin)/api/}
           @request_config[:api]
         else
           @request_config[:assets]
         end
 
-      method = orig_request.request_method.capitalize
-      request = request_init(config, env, method, orig_request.fullpath)
-      copy_body(orig_request, request)
+      method = orig_req.request_method.capitalize
+      sub_req = sub_request_init(config, orig_req, method, orig_req.fullpath)
+      copy_body(orig_req, sub_req)
 
-      response = config[:http].request(config[:uri], request)
-      net_http_response_to_rack(env, response)
+      sub_resp = config[:http].request(config[:uri], sub_req)
+      sub_response_to_rack(orig_req, sub_resp)
     else
-      debug orig_request, "passing request to Rack stack"
-      @app.call(env)
+      debug orig_req, "passing request to Rack stack"
+      @app.call(orig_req.env)
     end
-  end
-
-  def net_http_response_to_rack(env, response)
-    [
-     response.code.to_i,
-     extract_headers(env, response),
-     [(response.read_body() or '')]
-    ]
-  end
-
-  def wwwhisper_auth_request(env, req)
-    config = @request_config[:auth]
-    auth_request = request_init(config, env, 'Get', auth_query(req.path))
-    auth_response = config[:http].request(config[:uri], auth_request)
-    net_http_response_to_rack(env, auth_response)
-  end
-
-  def should_inject_iframe(status, headers)
-    status == 200 and headers['Content-Type'] =~ /text\/html/i
-  end
-
-  def inject_iframe(headers, body)
-    # If Content-Length is missing, Rack sets correct one.
-    headers.delete('Content-Length')
-    #todo: iterate?
-    body[0] = body[0].sub(/<\/body>/, "#{@wwwhisper_iframe}</body>")
-  end
-
-  def call(env)
-    req = Rack::Request.new(env)
-
-    req.path_info = Addressable::URI.normalize_path(req.path)
-    if req.path =~ %r{^#{@@WWWHISPER_PREFIX}auth}
-      # Requests to /@@WWWHISPER_PREFIX/auth/ should not be authorized,
-      # every visitor can access login pages.
-      return dispatch(env)
-    end
-    debug req, "sending auth request for #{req.path}"
-    auth_status, auth_headers, auth_body = wwwhisper_auth_request(env, req)
-
-    case auth_status
-    when 200
-      debug req, "access granted"
-      status, headers, body = dispatch(env)
-      inject_iframe(headers, body) if should_inject_iframe(status, headers)
-      [status, headers, body]
-    when 401, 403
-      login_needed = (auth_status == 401)
-      debug req,  login_needed ? "user not authenticated" : "access_denied"
-      req.path_info = login_needed ? auth_login_path() : auth_denied_path()
-      status, headers, body = dispatch(env)
-      auth_headers['Content-Type'] = headers['Content-Type']
-      # TODO: only here?
-      auth_headers['Content-Encoding'] = headers['Content-Encoding']
-      [auth_status, auth_headers, body]
-    else
-      debug req, "auth request failed"
-      [auth_status, auth_headers, auth_body]
-    end
-  end
-
-  # TODO: more private
-  private
-
-  def debug(req, message)
-    req.logger.debug "wwwhisper #{message}" if req.logger
   end
 
 end

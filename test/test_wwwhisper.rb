@@ -83,31 +83,25 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_login_required
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(:status => 401, :body => '', :headers => {})
-    stub_request(:get, full_assets_url(@wwwhisper.auth_login_path())).
-      to_return(:status => 200, :body => 'Login required', :headers => {})
+      to_return(:status => 401, :body => 'Login required', :headers => {})
 
     get path
     assert !last_response.ok?
     assert_equal 401, last_response.status
     assert_equal 'Login required', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
-    assert_requested :get, full_assets_url(@wwwhisper.auth_login_path())
   end
 
   def test_request_denied
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(:status => 403, :body => '', :headers => {})
-    stub_request(:get, full_assets_url(@wwwhisper.auth_denied_path())).
-      to_return(:status => 200, :body => 'Not authorized', :headers => {})
+      to_return(:status => 403, :body => 'Not authorized', :headers => {})
 
     get path
     assert !last_response.ok?
     assert_equal 403, last_response.status
     assert_equal 'Not authorized', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
-    assert_requested :get, full_assets_url(@wwwhisper.auth_denied_path())
   end
 
   def test_iframe_injected_to_html_response
@@ -161,11 +155,12 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 
-  def assert_path_normalized(normalized, requested)
+  def assert_path_normalized(normalized, requested, script_name=nil)
     stub_request(:get, full_url(@wwwhisper.auth_query(normalized))).
       to_return(:status => 200, :body => '', :headers => {})
 
-    get requested
+    env = script_name ? { 'SCRIPT_NAME' => script_name } : {}
+    get(requested, {}, env)
     assert last_response.ok?
     assert_equal 'Hello World', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(normalized))
@@ -190,6 +185,19 @@ class TestWWWhisper < Test::Unit::TestCase
     # paths.
     assert_path_normalized '/foo//', '/foo//'
     assert_path_normalized '//', '/./././/'
+  end
+
+  def test_path_normalization_with_script_name
+    assert_path_normalized '/foo/', '/', '/foo'
+    assert_path_normalized '/foo/bar/hello', '/bar/hello', '/foo'
+
+    assert_path_normalized '/baz/bar/hello', '/bar/hello', '/foo/../baz'
+
+    assert_path_normalized '/foo/baz/bar/hello', 'bar/hello', '/foo/./baz'
+
+    # Not handled too well (see comment above).
+    assert_path_normalized '/foo//', '/', '/foo/'
+    assert_path_normalized '//bar/hello', '/bar/hello', '/foo/..'
   end
 
   def test_admin_request
@@ -218,22 +226,23 @@ class TestWWWhisper < Test::Unit::TestCase
   end
 
   def test_site_url
-    path = '/foo/bar'
+    path = '/wwwhisper/admin/index.html'
+
     # Site-Url header should be sent to wwwhisper backend but not to
     # assets server.
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{SITE_HOST}"}).
-      to_return(:status => 401, :body => '', :headers => {})
-    stub_request(:get, full_assets_url(@wwwhisper.auth_login_path())).
+      to_return(:status => 200, :body => '', :headers => {})
+    stub_request(:get, full_assets_url(path)).
       with { |request| request.headers['Site-Url'] == nil}.
-      to_return(:status => 200, :body => 'Login required', :headers => {})
+      to_return(:status => 200, :body => 'Admin page', :headers => {})
 
     get path
-    assert !last_response.ok?
-    assert_equal 401, last_response.status
-    assert_equal 'Login required', last_response.body
+    assert last_response.ok?
+    assert_equal 200, last_response.status
+    assert_equal 'Admin page', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
-    assert_requested :get, full_assets_url(@wwwhisper.auth_login_path())
+    assert_requested :get, full_assets_url(path)
   end
 
   def test_site_url_with_non_default_port
