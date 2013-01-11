@@ -36,8 +36,9 @@ class WWWhisper
     @wwwhisper_iframe_bytesize = Rack::Utils::bytesize(@wwwhisper_iframe)
 
     @request_config = {
+      # TODO: probably now auth can be removed.
       :auth => {
-        :forwarded_headers => ['Cookie'],
+        :forwarded_headers => ['Accept', 'Accept-Language', 'Cookie'],
         :http => wwwhisper_http,
         :uri => wwwhisper_uri,
         :send_site_url => true,
@@ -89,23 +90,21 @@ class WWWhisper
     end
 
     debug req, "sending auth request for #{req.path}"
-    auth_status, auth_headers, auth_body = wwwhisper_auth_request(req)
+    auth_resp = wwwhisper_auth_request(req)
 
-    case auth_status
-    when 200
-      debug req, "access granted"
+    if auth_resp.code == '200'
+      debug req, 'access granted'
       status, headers, body = dispatch(req)
       if should_inject_iframe(status, headers)
         body = inject_iframe(headers, body)
       end
       [status, headers, body]
-    when 401, 403
-      login_needed = (auth_status == 401)
-      debug req,  login_needed ? "user not authenticated" : "access_denied"
-      [auth_status, auth_headers, auth_body]
     else
-      debug req, "auth request failed"
-      [auth_status, auth_headers, auth_body]
+      debug req, {
+        '401' => 'user not authenticated',
+        '403' => 'access_denied',
+      }[auth_resp.code] || 'auth request failed'
+      sub_response_to_rack(req, auth_resp)
     end
   end
 
@@ -218,8 +217,7 @@ class WWWhisper
   def wwwhisper_auth_request(req)
     config = @request_config[:auth]
     auth_req = sub_request_init(config, req, 'Get', auth_query(req.path))
-    auth_resp = config[:http].request(config[:uri], auth_req)
-    sub_response_to_rack(req, auth_resp)
+    config[:http].request(config[:uri], auth_req)
   end
 
   def should_inject_iframe(status, headers)
@@ -266,7 +264,7 @@ class WWWhisper
       sub_resp = config[:http].request(config[:uri], sub_req)
       sub_response_to_rack(orig_req, sub_resp)
     else
-      debug orig_req, "passing request to Rack stack"
+      debug orig_req, 'passing request to Rack stack'
       @app.call(orig_req.env)
     end
   end
