@@ -86,6 +86,7 @@ class TestWWWhisper < Test::Unit::TestCase
     get path
     assert last_response.ok?
     assert_equal 'Hello World', last_response.body
+    assert_equal TEST_USER, last_response['User']
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 

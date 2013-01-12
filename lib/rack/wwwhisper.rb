@@ -99,6 +99,7 @@ class WWWhisper
       if should_inject_iframe(status, headers)
         body = inject_iframe(headers, body)
       end
+      headers['User'] = auth_resp['User']
       [status, headers, body]
     else
       debug req, {
