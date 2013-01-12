@@ -79,9 +79,7 @@ class WWWhisper
   end
 
   def call(env)
-    req = Rack::Request.new(env)
-
-    normalize_path req
+    req = Request.new(env)
 
     if req.path =~ %r{^#{@@WWWHISPER_PREFIX}auth}
       # Requests to /@@WWWHISPER_PREFIX/auth/ should not be authorized,
@@ -111,14 +109,46 @@ class WWWhisper
   end
 
   private
+  class Request < Rack::Request
+    def initialize(env)
+      super(env)
+      normalize_path
+    end
+
+    def scheme
+      env['HTTP_X_FORWARDED_PROTO'] || 'http'
+    end
+
+    def host
+      env['HTTP_HOST']
+    end
+
+    def port
+      env['HTTP_X_FORWARDED_PORT'] || default_port(scheme)
+    end
+
+    def site_url
+      port_str = port != default_port(scheme) ? ":#{port}" : ""
+      "#{scheme}://#{host}#{port_str}"
+    end
+
+    private
+    def normalize_path()
+      self.script_name = Addressable::URI.normalize_path(script_name)
+      self.path_info = Addressable::URI.normalize_path(path_info)
+    end
+
+    def default_port(proto)
+      {
+        'http' => 80,
+        'https' => 443,
+      }[proto]
+    end
+  end
+
 
   def debug(req, message)
     req.logger.debug "wwwhisper #{message}" if req.logger
-  end
-
-  def normalize_path(req)
-    req.script_name = Addressable::URI.normalize_path(req.script_name)
-    req.path_info = Addressable::URI.normalize_path(req.path_info)
   end
 
   def parse_uri(uri)
@@ -127,30 +157,6 @@ class WWWhisper
     # https connections which is counterintuitive.
     parsed_uri.port ||= parsed_uri.default_port
     parsed_uri
-  end
-
-  def default_port(proto)
-    {
-      'http' => 80,
-      'https' => 443,
-    }[proto]
-  end
-
-  def proto_host_port(env)
-    proto = env['HTTP_X_FORWARDED_PROTO'] || 'http'
-    return proto,
-    env['HTTP_HOST'],
-    env['HTTP_X_FORWARDED_PORT'] || default_port(proto)
-  end
-
-  def site_url(env)
-    proto, host, port = proto_host_port(env)
-    port_str = if port != default_port(proto)
-                 ":#{port}"
-               else
-                 ''
-               end
-    "#{proto}://#{host}#{port_str}"
   end
 
   def http_init(connection_id)
@@ -166,7 +172,7 @@ class WWWhisper
     path = @aliases[path] || path
     sub_req = Net::HTTP.const_get(method).new(path)
     copy_headers(config[:forwarded_headers], rack_req.env, sub_req)
-    sub_req['Site-Url'] = site_url(rack_req.env) if config[:send_site_url]
+    sub_req['Site-Url'] = rack_req.site_url if config[:send_site_url]
     uri = config[:uri]
     sub_req.basic_auth(uri.user, uri.password) if uri.user and uri.password
     sub_req
@@ -200,7 +206,7 @@ class WWWhisper
       if header == 'Location'
         location = Addressable::URI.parse(value)
         location.scheme, location.host, location.port =
-          proto_host_port(rack_req.env)
+          rack_req.scheme, rack_req.host, rack_req.port
         value = location.to_s
       end
       rack_headers[header] = value
