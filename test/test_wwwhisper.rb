@@ -11,7 +11,10 @@ require 'rack/wwwhisper'
 
 ENV['RACK_ENV'] = 'test'
 
+TEST_USER = 'foo@example.com'
+
 class MockBackend
+  include Test::Unit::Assertions
   attr_accessor :response
 
   def initialize()
@@ -19,6 +22,8 @@ class MockBackend
   end
 
   def call(env)
+    # Make sure remote user is set by wwwhisper.
+    assert_equal TEST_USER, env['REMOTE_USER']
     @response
   end
 end
@@ -69,10 +74,14 @@ class TestWWWhisper < Test::Unit::TestCase
                  @wwwhisper.auth_query('/foo/bar'))
   end
 
+  def granted()
+    {:status => 200, :body => '', :headers => {'User' => TEST_USER}}
+  end
+
   def test_request_allowed
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
 
     get path
     assert last_response.ok?
@@ -107,7 +116,7 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_iframe_injected_to_html_response
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
     # wwwhisper iframe is injected only when response is a html document
     # with <body></body>
     body = '<html><body>Hello World</body></html>'
@@ -122,7 +131,7 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_iframe_not_injected_to_non_html_response
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
     body = '<html><body>Hello World</body></html>'
     @backend.response= [200, {'Content-Type' => 'text/plain'}, [body]]
 
@@ -146,7 +155,7 @@ class TestWWWhisper < Test::Unit::TestCase
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {'Cookie' => /wwwhisper_auth.+wwwhisper_csrf.+/}).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
 
     get(path, {},
         {'HTTP_COOKIE' => 'wwwhisper_auth=xyz; wwwhisper_csrf_token=abc'})
@@ -157,7 +166,7 @@ class TestWWWhisper < Test::Unit::TestCase
 
   def assert_path_normalized(normalized, requested, script_name=nil)
     stub_request(:get, full_url(@wwwhisper.auth_query(normalized))).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
 
     env = script_name ? { 'SCRIPT_NAME' => script_name } : {}
     get(requested, {}, env)
@@ -203,7 +212,7 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_admin_request
     path = '/wwwhisper/admin/api/users/xyz'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
     stub_request(:delete, full_url(path)).
       # Test that a header with multiple '-' is correctly passed
       with(:headers => {'X-Requested-With' => 'XMLHttpRequest'}).
@@ -232,7 +241,7 @@ class TestWWWhisper < Test::Unit::TestCase
     # assets server.
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{SITE_HOST}"}).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
     stub_request(:get, full_assets_url(path)).
       with { |request| request.headers['Site-Url'] == nil}.
       to_return(:status => 200, :body => 'Admin page', :headers => {})
@@ -274,7 +283,7 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_redirects
     path = '/wwwhisper/admin/index.html'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(:status => 200, :body => '', :headers => {})
+      to_return(granted())
     stub_request(:get, full_assets_url(path)).
       to_return(:status => 303, :body => 'Admin page moved',
                 :headers => {'Location' => 'https://new.location/foo/bar'})
