@@ -109,6 +109,7 @@ class WWWhisper
   end
 
   private
+
   class Request < Rack::Request
     def initialize(env)
       super(env)
@@ -145,7 +146,6 @@ class WWWhisper
       }[proto]
     end
   end
-
 
   def debug(req, message)
     req.logger.debug "wwwhisper #{message}" if req.logger
@@ -245,6 +245,8 @@ class WWWhisper
     body.each { |part|
       total << part
     }
+    body.close if body.respond_to?(:close)
+
     total = total.join()
     if idx = total.rindex('</body>')
       total.insert(idx, @wwwhisper_iframe)
@@ -277,6 +279,6 @@ class WWWhisper
     end
   end
 
-end
+end # class WWWhisper
 
-end
+end # module

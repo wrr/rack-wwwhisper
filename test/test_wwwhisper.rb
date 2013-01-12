@@ -142,6 +142,18 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 
+  def test_response_body_combined
+    path = '/foo/bar'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      to_return(granted())
+    @backend.response= [200, {'Content-Type' => 'text/html'},
+                        ['abc', 'def', 'ghi']]
+    get path
+    assert last_response.ok?
+    assert_equal('abcdefghi', last_response.body)
+    assert_requested :get, full_url(@wwwhisper.auth_query(path))
+  end
+
   def test_auth_query_not_sent_for_login_request
     path = '/wwwhisper/auth/api/login'
     stub_request(:get, full_url(path)).
