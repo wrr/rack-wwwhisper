@@ -1,3 +1,6 @@
+Work in progress. If you want to try wwwhisper-service, please send an
+email to wwwhisper-service@mixedbit.org.
+
 [wwwhisper](http://addons.heroku.com/wwwhisper) is an
 [add-on](http://addons.heroku.com) for authorizing access to Heroku
 applications.
