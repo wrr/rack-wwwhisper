@@ -201,12 +201,8 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_path_normalized '/', '/./././'
     assert_path_normalized '/bar', '/foo/./bar/../../bar'
     assert_path_normalized '/foo/', '/foo/bar/..'
-
-    # These two do not seem to be handled correctly and consistency,
-    # but this is not a big issue, because wwwhisper rejects such
-    # paths.
-    assert_path_normalized '/foo//', '/foo//'
-    assert_path_normalized '//', '/./././/'
+    assert_path_normalized '/foo/', '/foo/'
+    assert_path_normalized '/', '/./././/'
   end
 
   def test_path_normalization_with_script_name
@@ -216,10 +212,8 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_path_normalized '/baz/bar/hello', '/bar/hello', '/foo/../baz'
 
     assert_path_normalized '/foo/baz/bar/hello', 'bar/hello', '/foo/./baz'
-
-    # Not handled too well (see comment above).
-    assert_path_normalized '/foo//', '/', '/foo/'
-    assert_path_normalized '//bar/hello', '/bar/hello', '/foo/..'
+    assert_path_normalized '/foo/', '/', '/foo/'
+    assert_path_normalized '/bar/hello', '/bar/hello', '/foo/..'
   end
 
   def test_admin_request

@@ -135,8 +135,14 @@ class WWWhisper
 
     private
     def normalize_path()
-      self.script_name = Addressable::URI.normalize_path(script_name)
-      self.path_info = Addressable::URI.normalize_path(path_info)
+      self.script_name =
+        Addressable::URI.normalize_path(script_name).squeeze('/')
+      self.path_info =
+        Addressable::URI.normalize_path(path_info).squeeze('/')
+      # Avoid /foo/ /bar being combined into /foo//bar
+      if self.path_info[0] == ?/
+        self.script_name.chomp!('/')
+      end
     end
 
     def default_port(proto)
