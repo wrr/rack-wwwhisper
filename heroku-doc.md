@@ -26,7 +26,7 @@ wwwhisper can be attached to a Heroku application via the CLI.
 
 `--admin` is a required parameter that instruct wwwhisper to grant you
 access to the application. Later you can use the wwwhisper admin site
-to grant access to other users.
+to grant access to others.
 
 Once the add-on has been added a `WWWHISPER_URL` setting will be
 available in the app configuration and will contain the URL to

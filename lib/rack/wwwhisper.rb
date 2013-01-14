@@ -24,6 +24,14 @@ class WWWhisper
 
   def initialize(app)
     @app = app
+
+    if ENV['WWWHISPER_DISABLE'] == "1"
+      def self.call(env)
+        @app.call(env)
+      end
+      return
+    end
+
     if not ENV['WWWHISPER_URL']
       raise StandardError, 'WWWHISPER_URL environment variable not set'
     end

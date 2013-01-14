@@ -17,13 +17,14 @@ class MockBackend
   include Test::Unit::Assertions
   attr_accessor :response
 
-  def initialize()
+  def initialize(email)
     @response = [200, {'Content-Type' => 'text/html'}, ['Hello World']]
+    @expected_email = email
   end
 
   def call(env)
     # Make sure remote user is set by wwwhisper.
-    assert_equal TEST_USER, env['REMOTE_USER']
+    assert_equal @expected_email, env['REMOTE_USER']
     @response
   end
 end
@@ -37,7 +38,8 @@ class TestWWWhisper < Test::Unit::TestCase
   SITE_PORT = 443
 
   def setup()
-    @backend = MockBackend.new()
+    @backend = MockBackend.new(TEST_USER)
+    ENV.delete('WWWHISPER_DISABLE')
     ENV['WWWHISPER_URL'] = WWWHISPER_URL
     ENV['WWWHISPER_ASSETS_URL'] = WWWHISPER_ASSETS_URL
     @wwwhisper = Rack::WWWhisper.new(@backend)
@@ -303,6 +305,19 @@ class TestWWWhisper < Test::Unit::TestCase
                  last_response['Location'])
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
     assert_requested :get, full_assets_url(path)
+  end
+
+  def test_disable_wwwhisper
+    ENV.delete('WWWHISPER_URL')
+    ENV['WWWHISPER_DISABLE'] = "1"
+    # Configure MockBackend to make sure REMOTE_USER is not set.
+    @wwwhisper = Rack::WWWhisper.new(MockBackend.new(nil))
+
+    path = '/foo/bar'
+    get path
+    assert last_response.ok?
+    assert_equal 'Hello World', last_response.body
+    assert_nil last_response['User']
   end
 
 end
