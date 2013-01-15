@@ -223,17 +223,20 @@ class WWWhisper
           rack_req.scheme, rack_req.host, rack_req.port
         value = location.to_s
       end
-      rack_headers[header] = value
+      # If sub request returned chunked response, remove the header
+      # (chunks will be combined and returned with 'Content-Length).
+      rack_headers[header] = value if header != 'Transfer-Encoding'
     end
     return rack_headers
   end
 
   def sub_response_to_rack(rack_req, sub_resp)
-    [
-     sub_resp.code.to_i,
-     sub_response_headers_to_rack(rack_req, sub_resp),
-     [(sub_resp.read_body() or '')]
-    ]
+    headers = sub_response_headers_to_rack(rack_req, sub_resp)
+    body = sub_resp.read_body() || ''
+    if body.length and not headers['Content-Length']
+      headers['Content-Length'] = Rack::Utils::bytesize(body).to_s
+    end
+    [ sub_resp.code.to_i, headers, [body] ]
   end
 
   def wwwhisper_auth_request(req)

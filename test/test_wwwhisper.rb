@@ -320,4 +320,15 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_nil last_response['User']
   end
 
+  def test_chunked_encoding_from_wwwhisper_removed
+    path = '/foo/bar'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      to_return(:status => 401, :body => 'Login required',
+                :headers => {'Transfer-Encoding' => 'chunked'})
+    get path
+    assert_equal 401, last_response.status
+    assert_nil last_response['Transfer-Encoding']
+    assert_not_nil last_response['Content-Length']
+  end
+
 end
