@@ -128,12 +128,17 @@ class WWWhisper
       env['HTTP_X_FORWARDED_PROTO'] || 'http'
     end
 
-    def host
+    def host_with_port
       env['HTTP_HOST']
     end
 
+    def host
+      host_with_port.to_s.gsub(/:\d+\z/, '')
+    end
+
     def port
-      env['HTTP_X_FORWARDED_PORT'] || default_port(scheme)
+      env['HTTP_X_FORWARDED_PORT'] || host_with_port.split(/:/)[1] ||
+        default_port(scheme)
     end
 
     def site_url
@@ -218,10 +223,15 @@ class WWWhisper
     rack_headers = Rack::Utils::HeaderHash.new()
     sub_resp.each_capitalized do |header, value|
       if header == 'Location'
+        puts "orig location #{value} host #{rack_req.site_url}"
         location = Addressable::URI.parse(value)
+        puts "parsed #{location.scheme} #{location.host} #{location.port} to s: #{location.to_s}"
         location.scheme, location.host, location.port =
           rack_req.scheme, rack_req.host, rack_req.port
+        puts "and these three: #{rack_req.scheme} #{rack_req.host} #{rack_req.port}"
+        puts "parsed  again#{location.scheme} #{location.host} #{location.port} to s: #{location.to_s}"
         value = location.to_s
+        puts "Location #{value}"
       end
       # If sub request returned chunked response, remove the header
       # (chunks will be combined and returned with 'Content-Length).

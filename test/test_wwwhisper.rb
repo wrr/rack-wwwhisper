@@ -263,6 +263,20 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_requested :get, full_assets_url(path)
   end
 
+  def test_host_with_port
+    path = '/foo'
+    host = 'localhost:5000'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      # Test makes sure that port is not repeated in Site-Url.
+      with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{host}"}).
+      to_return(:status => 401, :body => 'Login required', :headers => {})
+
+    # TODO: start here
+    get(path, {}, {'HTTP_HOST' => host, 'HTTP_X_FORWARDED_PORT' => '5000'})
+    assert_equal 401, last_response.status
+    assert_requested :get, full_url(@wwwhisper.auth_query(path))
+  end
+
   def test_site_url_with_non_default_port
     path = '/foo/bar'
     port = 11235
