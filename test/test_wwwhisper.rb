@@ -169,11 +169,29 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_auth_cookies_passed_to_wwwhisper()
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      with(:headers => {'Cookie' => /wwwhisper_auth.+wwwhisper_csrf.+/}).
+      with(:headers => {
+             'Cookie' => /wwwhisper-auth=xyz; wwwhisper-csrftoken=abc/
+           }).
       to_return(granted())
 
     get(path, {},
-        {'HTTP_COOKIE' => 'wwwhisper_auth=xyz; wwwhisper_csrf_token=abc'})
+        {'HTTP_COOKIE' => 'wwwhisper-auth=xyz; wwwhisper-csrftoken=abc'})
+    assert last_response.ok?
+    assert_equal 'Hello World', last_response.body
+    assert_requested :get, full_url(@wwwhisper.auth_query(path))
+  end
+
+  def test_non_wwwhisper_cookies_not_passed_to_wwwhisper()
+    path = '/foo/bar'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      with(:headers => {
+             'Cookie' => /wwwhisper-auth=xyz; wwwhisper-csrftoken=abc/
+           }).
+      to_return(granted())
+
+    get(path, {},
+        {'HTTP_COOKIE' => 'session=123; wwwhisper-auth=xyz;' +
+          'settings=foobar; wwwhisper-csrftoken=abc'})
     assert last_response.ok?
     assert_equal 'Hello World', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(path))

@@ -197,14 +197,15 @@ class WWWhisper
     sub_req
   end
 
-  def has_value(dict, key)
-    dict[key] != nil and !dict[key].empty?
-  end
-
   def copy_headers(headers_names, env, sub_req)
     headers_names.each do |header|
       key = "HTTP_#{header.upcase}".gsub(/-/, '_')
-      sub_req[header] = env[key] if has_value(env, key)
+      value = env[key]
+      if value and key == 'HTTP_COOKIE'
+        # Pass only wwwhisper's cookies to the wwwhisper service.
+        value = value.scan(/wwwhisper-[^;]*(?:;|$)/).join(' ')
+      end
+      sub_req[header] = value if value and not value.empty?
     end
   end
 
