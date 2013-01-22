@@ -11,10 +11,10 @@ require 'rack/utils'
 module Rack
 
 class WWWhisper
-  @@DEFAULT_ASSETS_URL = 'https://c693db817dca7e162673-39ba3573e09a1fa9bea151a745461b70.ssl.cf1.rackcdn.com'
   @@WWWHISPER_PREFIX = '/wwwhisper/'
-  #@@AUTH_COOKIES_PREFIX = 'wwwhisper'
-
+  @@AUTH_COOKIES_PREFIX = 'wwwhisper'
+  @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'X-CSRFToken',
+                         'X-Requested-With']
   @@DEFAULT_IFRAME = \
 %Q[<iframe id="wwwhisper-iframe" src="%s"
  width="340" height="29" frameborder="0" scrolling="no"
@@ -36,46 +36,12 @@ class WWWhisper
       raise StandardError, 'WWWHISPER_URL environment variable not set'
     end
 
-    wwwhisper_http = http_init('wwwhisper')
-    wwwhisper_uri = parse_uri(ENV['WWWHISPER_URL'])
+    @http = http_init('wwwhisper')
+    @wwwhisper_uri = parse_uri(ENV['WWWHISPER_URL'])
 
     @wwwhisper_iframe = ENV['WWWHISPER_IFRAME'] ||
       sprintf(@@DEFAULT_IFRAME, wwwhisper_path('auth/overlay.html'))
     @wwwhisper_iframe_bytesize = Rack::Utils::bytesize(@wwwhisper_iframe)
-
-    @request_config = {
-      # TODO: probably now auth can be removed.
-      :auth => {
-        :forwarded_headers => ['Accept', 'Accept-Language', 'Cookie'],
-        :http => wwwhisper_http,
-        :uri => wwwhisper_uri,
-        :send_site_url => true,
-      },
-      :api => {
-        :forwarded_headers => ['Accept', 'Accept-Language', 'Cookie',
-                               'X-CSRFToken', 'X-Requested-With'],
-        :http => wwwhisper_http,
-        :uri => wwwhisper_uri,
-        :send_site_url => true,
-      },
-      :assets => {
-        # Don't pass Accept-Encoding to get uncompressed response (so
-        # iframe can be inserted to it).
-        :forwarded_headers => ['Accept', 'Accept-Language'],
-        :http => http_init('wwwhisper-assets'),
-        :uri => parse_uri(ENV['WWWHISPER_ASSETS_URL'] || @@DEFAULT_ASSETS_URL),
-        :send_site_url => false,
-      },
-    }
-
-    @aliases = {}
-    {
-      'auth/login' => 'auth/login.html',
-      'auth/logout' => 'auth/logout.html',
-      'admin/' => 'admin/index.html',
-    }.each do |k, v|
-      @aliases[wwwhisper_path(k)] = wwwhisper_path(v)
-    end
   end
 
   def wwwhisper_path(suffix)
@@ -89,7 +55,7 @@ class WWWhisper
   def call(env)
     req = Request.new(env)
 
-    if req.path =~ %r{^#{@@WWWHISPER_PREFIX}auth}
+    if req.path =~ %r{^#{wwwhisper_path('auth')}}
       # Requests to /@@WWWHISPER_PREFIX/auth/ should not be authorized,
       # every visitor can access login pages.
       return dispatch(req)
@@ -187,13 +153,13 @@ class WWWhisper
     return http
   end
 
-  def sub_request_init(config, rack_req, method, path)
-    path = @aliases[path] || path
+  def sub_request_init(rack_req, method, path)
     sub_req = Net::HTTP.const_get(method).new(path)
-    copy_headers(config[:forwarded_headers], rack_req.env, sub_req)
-    sub_req['Site-Url'] = rack_req.site_url if config[:send_site_url]
-    uri = config[:uri]
-    sub_req.basic_auth(uri.user, uri.password) if uri.user and uri.password
+    copy_headers(@@FORWARDED_HEADERS, rack_req.env, sub_req)
+    sub_req['Site-Url'] = rack_req.site_url
+    if @wwwhisper_uri.user and @wwwhisper_uri.password
+      sub_req.basic_auth(@wwwhisper_uri.user, @wwhisper_uri.password)
+    end
     sub_req
   end
 
@@ -203,7 +169,7 @@ class WWWhisper
       value = env[key]
       if value and key == 'HTTP_COOKIE'
         # Pass only wwwhisper's cookies to the wwwhisper service.
-        value = value.scan(/wwwhisper-[^;]*(?:;|$)/).join(' ')
+        value = value.scan(/#{@@AUTH_COOKIES_PREFIX}-[^;]*(?:;|$)/).join(' ')
       end
       sub_req[header] = value if value and not value.empty?
     end
@@ -246,9 +212,8 @@ class WWWhisper
   end
 
   def wwwhisper_auth_request(req)
-    config = @request_config[:auth]
-    auth_req = sub_request_init(config, req, 'Get', auth_query(req.path))
-    config[:http].request(config[:uri], auth_req)
+    auth_req = sub_request_init(req, 'Get', auth_query(req.path))
+    @http.request(@wwwhisper_uri, auth_req)
   end
 
   def should_inject_iframe(status, headers)
@@ -283,18 +248,11 @@ class WWWhisper
     if orig_req.path =~ %r{^#{@@WWWHISPER_PREFIX}}
       debug orig_req, "passing request to wwwhisper service #{orig_req.path}"
 
-      config =
-        if orig_req.path =~ %r{^#{@@WWWHISPER_PREFIX}(auth|admin)/api/}
-          @request_config[:api]
-        else
-          @request_config[:assets]
-        end
-
       method = orig_req.request_method.capitalize
-      sub_req = sub_request_init(config, orig_req, method, orig_req.fullpath)
+      sub_req = sub_request_init(orig_req, method, orig_req.fullpath)
       copy_body(orig_req, sub_req)
 
-      sub_resp = config[:http].request(config[:uri], sub_req)
+      sub_resp = @http.request(@wwwhisper_uri, sub_req)
       sub_response_to_rack(orig_req, sub_resp)
     else
       debug orig_req, 'passing request to Rack stack'

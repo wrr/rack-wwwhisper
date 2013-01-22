@@ -32,7 +32,6 @@ end
 class TestWWWhisper < Test::Unit::TestCase
   include Rack::Test::Methods
   WWWHISPER_URL = 'https://example.com'
-  WWWHISPER_ASSETS_URL = 'https://assets.example.com'
   SITE_PROTO = 'https'
   SITE_HOST = 'bar.io'
   SITE_PORT = 443
@@ -41,7 +40,6 @@ class TestWWWhisper < Test::Unit::TestCase
     @backend = MockBackend.new(TEST_USER)
     ENV.delete('WWWHISPER_DISABLE')
     ENV['WWWHISPER_URL'] = WWWHISPER_URL
-    ENV['WWWHISPER_ASSETS_URL'] = WWWHISPER_ASSETS_URL
     @wwwhisper = Rack::WWWhisper.new(@backend)
   end
 
@@ -51,10 +49,6 @@ class TestWWWhisper < Test::Unit::TestCase
 
   def full_url(path)
     "#{WWWHISPER_URL}#{path}"
-  end
-
-  def full_assets_url(path)
-    "#{WWWHISPER_ASSETS_URL}#{path}"
   end
 
   def test_wwwhisper_url_required
@@ -264,13 +258,12 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_site_url
     path = '/wwwhisper/admin/index.html'
 
-    # Site-Url header should be sent to wwwhisper backend but not to
-    # assets server.
+    # Site-Url header should be sent to wwwhisper backend.
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{SITE_HOST}"}).
       to_return(granted())
-    stub_request(:get, full_assets_url(path)).
-      with { |request| request.headers['Site-Url'] == nil}.
+    stub_request(:get, full_url(path)).
+      with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{SITE_HOST}"}).
       to_return(:status => 200, :body => 'Admin page', :headers => {})
 
     get path
@@ -278,7 +271,7 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal 200, last_response.status
     assert_equal 'Admin page', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
-    assert_requested :get, full_assets_url(path)
+    assert_requested :get, full_url(path)
   end
 
   def test_host_with_port
@@ -310,22 +303,11 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 
-  def test_aliases
-    requested_path = '/wwwhisper/auth/login'
-    expected_path = requested_path + '.html'
-    stub_request(:get, full_assets_url(expected_path)).
-      to_return(:status => 200, :body => 'Login', :headers => {})
-
-    get requested_path
-    assert last_response.ok?
-    assert_equal 'Login', last_response.body
-  end
-
   def test_redirects
     path = '/wwwhisper/admin/index.html'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       to_return(granted())
-    stub_request(:get, full_assets_url(path)).
+    stub_request(:get, full_url(path)).
       to_return(:status => 303, :body => 'Admin page moved',
                 :headers => {'Location' => 'https://new.location/foo/bar'})
 
@@ -336,7 +318,7 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal("#{SITE_PROTO}://#{SITE_HOST}:#{SITE_PORT}/foo/bar",
                  last_response['Location'])
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
-    assert_requested :get, full_assets_url(path)
+    assert_requested :get, full_url(path)
   end
 
   def test_disable_wwwhisper
