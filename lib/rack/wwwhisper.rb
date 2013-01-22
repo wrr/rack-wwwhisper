@@ -158,7 +158,7 @@ class WWWhisper
     copy_headers(@@FORWARDED_HEADERS, rack_req.env, sub_req)
     sub_req['Site-Url'] = rack_req.site_url
     if @wwwhisper_uri.user and @wwwhisper_uri.password
-      sub_req.basic_auth(@wwwhisper_uri.user, @wwhisper_uri.password)
+      sub_req.basic_auth(@wwwhisper_uri.user, @wwwhisper_uri.password)
     end
     sub_req
   end
