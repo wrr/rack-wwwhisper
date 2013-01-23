@@ -10,27 +10,44 @@ require 'rack/utils'
 
 module Rack
 
+class NoPublicCache
+  def initialize(app)
+    @app = app
+  end
+
+  def call(env)
+    status, headers, body = @app.call(env)
+    if cache_control = headers['Cache-Control']
+      # If caching is enabled, make sure it is private.
+      if (not cache_control.gsub!(/public/, 'private') and
+          cache_control.index(/max-age\s*=\s*0*[1-9]/))
+          cache_control.insert(0, 'private, ')
+      end
+    end
+    [status, headers, body]
+  end
+end
+
 class WWWhisper
   @@WWWHISPER_PREFIX = '/wwwhisper/'
   @@AUTH_COOKIES_PREFIX = 'wwwhisper'
   @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'X-CSRFToken',
                          'X-Requested-With']
   @@DEFAULT_IFRAME = \
-%Q[<iframe id="wwwhisper-iframe" src="%s"
- width="340" height="29" frameborder="0" scrolling="no"
+%Q[<iframe id="wwwhisper-iframe" src="%s" width="340" height="29"
  style="position:fixed; overflow:hidden; border:0px; bottom:0px;
  right:0px; z-index:11235; background-color:transparent;"> </iframe>
 ]
 
   def initialize(app)
     @app = app
-
     if ENV['WWWHISPER_DISABLE'] == "1"
       def self.call(env)
         @app.call(env)
       end
       return
     end
+    @app = NoPublicCache.new(app)
 
     if not ENV['WWWHISPER_URL']
       raise StandardError, 'WWWHISPER_URL environment variable not set'

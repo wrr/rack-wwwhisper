@@ -27,6 +27,11 @@ class MockBackend
     assert_equal @expected_email, env['REMOTE_USER']
     @response
   end
+
+  def add_response_header(key, value)
+    @response[1][key] = value
+  end
+
 end
 
 class TestWWWhisper < Test::Unit::TestCase
@@ -343,6 +348,22 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal 401, last_response.status
     assert_nil last_response['Transfer-Encoding']
     assert_not_nil last_response['Content-Length']
+  end
+
+  def test_public_caching_disabled()
+    path = '/foo/bar'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      to_return(granted())
+    @backend.add_response_header('Cache-Control', 'public, max-age=60')
+
+    get path
+    assert last_response.ok?
+    assert_equal 'private, max-age=60', last_response['Cache-Control']
+
+    @backend.add_response_header('Cache-Control', 'max-age=60')
+    get path
+    assert last_response.ok?
+    assert_equal 'private, max-age=60', last_response['Cache-Control']
   end
 
 end
