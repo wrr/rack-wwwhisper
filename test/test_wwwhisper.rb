@@ -29,7 +29,8 @@ class MockBackend
   end
 
   def add_response_header(key, value)
-    @response[1][key] = value
+    # Frozen strings as header values must be handled correctly.
+    @response[1][key] = value.freeze
   end
 
 end
@@ -354,8 +355,8 @@ class TestWWWhisper < Test::Unit::TestCase
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       to_return(granted())
-    @backend.add_response_header('Cache-Control', 'public, max-age=60')
 
+    @backend.add_response_header('Cache-Control', 'public, max-age=60')
     get path
     assert last_response.ok?
     assert_equal 'private, max-age=60', last_response['Cache-Control']
@@ -364,6 +365,12 @@ class TestWWWhisper < Test::Unit::TestCase
     get path
     assert last_response.ok?
     assert_equal 'private, max-age=60', last_response['Cache-Control']
+
+    @backend.add_response_header('Cache-Control', 'private, max-age=60')
+    get path
+    assert last_response.ok?
+    assert_equal 'private, max-age=60', last_response['Cache-Control']
+
   end
 
 end

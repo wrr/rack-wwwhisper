@@ -19,10 +19,14 @@ class NoPublicCache
     status, headers, body = @app.call(env)
     if cache_control = headers['Cache-Control']
       # If caching is enabled, make sure it is private.
-      if (not cache_control.gsub!(/public/, 'private') and
+      cache_control = cache_control.gsub(/public/, 'private')
+      if (not cache_control.include? 'private' and
           cache_control.index(/max-age\s*=\s*0*[1-9]/))
-          cache_control.insert(0, 'private, ')
+        # max-age > 0 without 'public' or 'private' directive is
+        # treated as 'public', so 'private' needs to be prepended.
+        cache_control.insert(0, 'private, ')
       end
+      headers['Cache-Control'] = cache_control
     end
     [status, headers, body]
   end
