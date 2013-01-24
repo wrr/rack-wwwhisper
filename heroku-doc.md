@@ -7,15 +7,14 @@ applications.
 
 wwwhisper lets you specify emails of users that are allowed to access
 the application. It uses [Persona](https://persona.org) to smoothly
-and securely prove that a visitor owns an allowed email. Persona
-removes a need for site-specific passwords, making passwords
-management a non-issue.
+and securely prove that a visitor owns one of allowed emails. Persona
+works out of a box with any modern browser. It removes a need for
+site-specific passwords, making passwords management a non-issue.
 
 Integration with wwwhisper service is provided via Rack middleware
 which can be used with any Rails or Rack based application. This
 minimizes integration cost, there is no need to modify your
 application code and explicitly call wwwhisper API.
-
 
 ## Provisioning the add-on
 
@@ -24,7 +23,7 @@ wwwhisper can be attached to a Heroku application via the CLI.
     :::term
     $ heroku addons:add wwwhisper --admin=[put your email here]
 
-`--admin` is a required parameter that instruct wwwhisper to grant you
+`--admin` is a required parameter that instructs wwwhisper to grant you
 access to the application. Later you can use the wwwhisper admin site
 to grant access to others.
 
@@ -44,10 +43,10 @@ fully integrate with the add-on.
 
 ### Environment setup
 
-It is convenient to disable wwwhisper authorization for development
-environment. If you use [Foreman](config-vars#local_setup) to start a
-local server, you can disable wwwhisper by executing following command
-in the application directory.
+It is usually convenient to disable wwwhisper authorization for a local
+development environment. If you use [Foreman](config-vars#local_setup)
+to start a local server, you can disable wwwhisper by executing
+following command in the application directory.
 
     :::term
     $ echo WWWHISPER_DISABLE=1 >> .env
@@ -58,10 +57,10 @@ If you don't use Foreman, you can execute.
     $ export WWWHISPER_DISABLE=1
 
 
-## Using with Rails 3.x
+## Using with Ruby.
 
-Ruby on Rails applications need to add the following entry into
-their `Gemfile`.
+Ruby applications need to add the following entry into their
+`Gemfile`.
 
     :::ruby
     gem 'wwwhisper-rack'
@@ -71,11 +70,26 @@ Update application dependencies with bundler.
     :::term
     $ bundle install
 
+###Enabling wwwhisper middleware in Rails.
+
+###Enabling wwwhisper middleware in other Rack based applications.
+
 Add following two lines to the `config.ru`:
 
     require 'rack/wwwhisper'
     # ...
     use Rack::WWWhisper
+
+### Where to place wwwhisper middleware in the Rack middleware chain?
+
+Order of Rack middlewares matters. Authentication should be
+performed early, before any middleware that produces sensitive
+responses is invoked.
+
+wwwhisper by default inserts an iframe to HTML responses. The iframe
+contains an email of currently logged in user and a logout button. If
+Rack is configured to compress responses, compression middleware
+should be put before wwwhisper, otherwise iframe won't be injected.
 
 ## Dashboard
 
