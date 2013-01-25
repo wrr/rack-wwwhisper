@@ -10,15 +10,21 @@ require 'rack/utils'
 
 module Rack
 
+# An internal middleware used by Rack::WWWhisper to change directives
+# that enable public caching into directives that enable private
+# caching.
+#
+# To be on a safe side, all wwwhisper protected content is treated as
+# sensitive and not publicly cacheable.
 class NoPublicCache
   def initialize(app)
     @app = app
   end
 
+  # If a response enables caching, makes sure it is private.
   def call(env)
     status, headers, body = @app.call(env)
     if cache_control = headers['Cache-Control']
-      # If caching is enabled, make sure it is private.
       cache_control = cache_control.gsub(/public/, 'private')
       if (not cache_control.include? 'private' and
           cache_control.index(/max-age\s*=\s*0*[1-9]/))
@@ -30,11 +36,36 @@ class NoPublicCache
     end
     [status, headers, body]
   end
+
 end
 
+# Communicates with the wwwhisper service to authorize each incomming
+# request. Acts as a proxy for requests to locations handled by
+# wwwhisper (/wwwhisper/auth and /wwwhisper/admin)
+#
+# For each incomming request an authorization query is sent.
+# The query contains a normalized path that a request is
+# trying to access and a wwwhisper session cookies. The
+# query result determines the action to be performed:
+# [200] request is allowed and passed down the Rack stack.
+# [401] the user is not authenticated, request is denied, login
+#       page is returned.
+# [403] the user is not authorized, request is denied, error is returned.
+# [any other] error while communicating with wwwhisper, request is denied.
+#
+# For Persona assertion verification the middleware depends on a
+# 'Host' header being verified by a frontend server. This is true on
+# Heroku, where the 'Host' header is rewritten if a request sets it to
+# incorrect value.  If the frontend server does does not perform such
+# verification, SITE_URL environment variable must be set to enforce a
+# valid url (for example `export SITE_URL="\https://example.com"`).
 class WWWhisper
+  # Requests to locations starting with this prefix are passed to wwwhisper.
   @@WWWHISPER_PREFIX = '/wwwhisper/'
+  # Cookies starting with this prefix are passed to wwwhisper.
   @@AUTH_COOKIES_PREFIX = 'wwwhisper'
+  # Headers that are passed to wwwhisper ('Cookie' is handled
+  # in a special way: only wwwhisper related cookies are passed).
   @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'X-CSRFToken',
                          'X-Requested-With']
   @@DEFAULT_IFRAME = \
@@ -43,6 +74,21 @@ class WWWhisper
  right:0px; z-index:11235; background-color:transparent;"> </iframe>
 ]
 
+  # Following environment variables are recognized:
+  # 1. WWWHISPER_DISABLE: useful for a local development environment.
+  #
+  # 2. WWWHISPER_URL: an address of a wwwhisper service that must be
+  #    set if WWWHISPER_DISABLE is not set. The url includes
+  #    credentials that identify a protected site. If the same
+  #    credentials are used for \www.example.org and \www.example.com,
+  #    the sites are treated as one: access control rules defined for
+  #    one site, apply to the other site.
+  #
+  # 3. WWWHISPER_IFRAME: a HTML snippet that should be injected to
+  #    returned HTML documents (has a default value).
+  #
+  # 4. SITE_URL: must be set if the frontend server does not validate
+  #    the Host header.
   def initialize(app)
     @app = app
     if ENV['WWWHISPER_DISABLE'] == "1"
@@ -51,6 +97,7 @@ class WWWhisper
       end
       return
     end
+
     @app = NoPublicCache.new(app)
 
     if not ENV['WWWHISPER_URL']
@@ -65,10 +112,12 @@ class WWWhisper
     @wwwhisper_iframe_bytesize = Rack::Utils::bytesize(@wwwhisper_iframe)
   end
 
+  # Exposed for tests.
   def wwwhisper_path(suffix)
     "#{@@WWWHISPER_PREFIX}#{suffix}"
   end
 
+  # Exposed for tests.
   def auth_query(queried_path)
     wwwhisper_path "auth/api/is-authorized/?path=#{queried_path}"
   end
@@ -76,11 +125,9 @@ class WWWhisper
   def call(env)
     req = Request.new(env)
 
-    if req.path =~ %r{^#{wwwhisper_path('auth')}}
-      # Requests to /@@WWWHISPER_PREFIX/auth/ should not be authorized,
-      # every visitor can access login pages.
-      return dispatch(req)
-    end
+    # Requests to /@@WWWHISPER_PREFIX/auth/ should not be authorized,
+    # every visitor can access login pages.
+    return dispatch(req) if req.path =~ %r{^#{wwwhisper_path('auth')}}
 
     debug req, "sending auth request for #{req.path}"
     auth_resp = wwwhisper_auth_request(req)
@@ -104,45 +151,49 @@ class WWWhisper
   end
 
   private
-
+  # Extends Rack::Request with more conservative scheme, host and port
+  # setting rules. Rack::Request tries to obtain these values from
+  # mutiple sources, whereas for wwwhisper it is crucial that the
+  # values are not spoofed by the client.
+  #
+  # If SITE_URL environemnt variable is set: scheme, host and port are
+  # always taken directly from it.
+  #
+  # If SITE_URL is not set, scheme is taken from the X-Forwarded-Proto
+  # header, host is taken from the 'Host' header and port is taken
+  # from the X-Forwarded-Port header. The frontend must ensure these
+  # values can not be spoofed by client (a request to example.com,
+  # that carries a Host header 'example.org' should be dropped or
+  # rewritten).
   class Request < Rack::Request
+    attr_reader :scheme, :host, :port, :site_url
+
     def initialize(env)
       super(env)
       normalize_path
-    end
-
-    def scheme
-      env['HTTP_X_FORWARDED_PROTO'] || 'http'
-    end
-
-    def host_with_port
-      env['HTTP_HOST']
-    end
-
-    def host
-      host_with_port.to_s.gsub(/:\d+\z/, '')
-    end
-
-    def port
-      env['HTTP_X_FORWARDED_PORT'] || host_with_port.split(/:/)[1] ||
-        default_port(scheme)
-    end
-
-    def site_url
-      port_str = port != default_port(scheme) ? ":#{port}" : ""
-      "#{scheme}://#{host}#{port_str}"
+      if (@site_url = ENV['SITE_URL'])
+        uri = Addressable::URI.parse(@site_url)
+        @scheme = uri.scheme
+        @host = uri.host
+        @port = uri.port || default_port(@scheme)
+      else
+        @scheme = env['HTTP_X_FORWARDED_PROTO'] || 'http'
+        @host, port_from_host = env['HTTP_HOST'].split(/:/)
+        @port = env['HTTP_X_FORWARDED_PORT'] || port_from_host ||
+          default_port(@scheme)
+        port_str = @port != default_port(@scheme) ? ":#{@port}" : ""
+        @site_url = "#{@scheme}://#{@host}#{port_str}"
+      end
     end
 
     private
-    def normalize_path()
+    def normalize_path
       self.script_name =
         Addressable::URI.normalize_path(script_name).squeeze('/')
       self.path_info =
         Addressable::URI.normalize_path(path_info).squeeze('/')
       # Avoid /foo/ /bar being combined into /foo//bar
-      if self.path_info[0] == ?/
-        self.script_name.chomp!('/')
-      end
+      self.script_name.chomp!('/') if self.path_info[0] == ?/
     end
 
     def default_port(proto)

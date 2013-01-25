@@ -45,6 +45,7 @@ class TestWWWhisper < Test::Unit::TestCase
   def setup()
     @backend = MockBackend.new(TEST_USER)
     ENV.delete('WWWHISPER_DISABLE')
+    ENV.delete('SITE_URL')
     ENV['WWWHISPER_URL'] = WWWHISPER_URL
     @wwwhisper = Rack::WWWhisper.new(@backend)
   end
@@ -278,6 +279,27 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal 'Admin page', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
     assert_requested :get, full_url(path)
+  end
+
+  def test_explicit_site_url_takes_precedense
+    path = '/wwwhisper/admin/index.html'
+
+    site_url = 'https://foo.bar.com'
+    ENV['SITE_URL'] = site_url
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      with(:headers => {'Site-Url' => site_url}).
+      to_return(granted())
+    stub_request(:get, full_url(path)).
+      with(:headers => {'Site-Url' => site_url}).
+      to_return(:status => 200, :body => 'Admin page', :headers => {})
+
+    get path
+    assert last_response.ok?
+    assert_equal 200, last_response.status
+    assert_equal 'Admin page', last_response.body
+    assert_requested :get, full_url(@wwwhisper.auth_query(path))
+    assert_requested :get, full_url(path)
+    ENV['SITE_URL'] = site_url
   end
 
   def test_host_with_port
