@@ -84,7 +84,7 @@ class WWWhisper
   #    the sites are treated as one: access control rules defined for
   #    one site, apply to the other site.
   #
-  # 3. WWWHISPER_IFRAME: a HTML snippet that should be injected to
+  # 3. WWWHISPER_IFRAME: an HTML snippet that should be injected to
   #    returned HTML documents (has a default value).
   #
   # 4. SITE_URL: must be set if the frontend server does not validate

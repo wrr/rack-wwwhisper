@@ -5,11 +5,10 @@ wwwhisper-service@mixedbit.org.
 [add-on](http://addons.heroku.com) for authorizing access to Heroku
 applications.
 
-wwwhisper lets you specify emails of users that are allowed to access
-the application or some select locations of the
-application. [Persona](https://persona.org) is used to smoothly and
-securely prove that a visitor owns one of allowed emails. Persona
-works out of a box with any modern browser. It removes a need for
+The add-on lets you specify emails of users that are allowed to access
+the application. [Persona](https://persona.org) is used to smoothly
+and securely prove that a visitor owns an allowed email. Persona works
+out of a box with any modern browser. It removes a need for
 site-specific passwords, making passwords management a non-issue.
 
 Integration with wwwhisper service is provided via Rack middleware
@@ -20,7 +19,7 @@ application code and explicitly call wwwhisper API.
 A demo of wwwhisper authorized site is available at
 https://wwwhisper-demo.herokuapp.com/. The site is configured to allow
 everyone access. You can sign-in with your email or with any email in
-the format: `anything@mockmyid.com`.
+the form `anything@mockmyid.com`.
 
 ## Provisioning the add-on
 
@@ -51,7 +50,7 @@ All Ruby applications need to add the following entry into their
     :::ruby
     gem 'rack-wwwhisper', '~> 1.0'
 
-Update application dependencies with bundler.
+And then update application dependencies with bundler.
 
     :::term
     $ bundle install
@@ -74,8 +73,11 @@ To enable wwwhisper middleware for other Rack based applications add
 following two lines to the `config.ru`:
 
     require 'rack/wwwhisper'
-    # ...
     use Rack::WWWhisper
+
+You can consult [a
+commit](https://github.com/wrr/heroku-sinatra-app/commit/f152a4370d6b1c881f8dd60a91a3f050a8c6389b)
+that enabled wwwhisper for a simple Sinatra application.
 
 ## Where to place wwwhisper middleware in the Rack middleware chain?
 
@@ -131,6 +133,32 @@ wwwhisper can be removed via the CLI.
     :::term
     $ heroku addons:remove wwwhisper
 
+## A privacy note
+
+wwwhisper service stores emails of users allowed to access your
+application. The emails are used ONLY to authorize access to the
+application. The service does not sent any messages to the email
+addresses, emails are not disclosed to third parties.
+
+wwwhisper does not store information which users accessed which
+locations of your application.
+
+## Final remarks
+
+For maximum security access wwwhisper protected applications over HTTPS.
+
+Your application can retrieve an email of authenticated user from a Rack
+environment variable `REMOTE_USER`.
+
+wwwhisper authorizes access only to content served by the Heroku
+application. If you put sensitive content on external servers that do
+not require authorization (for example Amazon CloudFront), wwwhisper
+won't be able to restrict access to such content.
+
+wwwhisper is open source, see [the project repository]
+(https://github.com/wrr/wwwhisper) for a detailed explanation how it
+works.
+
 ## Support
 
 wwwhisper support and runtime issues should be submitted via one of
@@ -140,9 +168,3 @@ related issues or product feedback is welcome at
 related to wwwhisper project in general and not limited to the add-on
 can be also reported via [github](https://github.com/wrr/wwwhisper/issues).
 
-## Final remarks
-
-For maximum security access wwwhisper protected applications over HTTPS.
-
-Your application can retrieve an email of authenticated user from a Rack
-environment variable `REMOTE_USER`.
