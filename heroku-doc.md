@@ -1,4 +1,4 @@
-To try wwwhisper-service, please send an email to
+To enable wwwhisper add-on, please send an email to
 wwwhisper-service@mixedbit.org.
 
 [wwwhisper](http://addons.heroku.com/wwwhisper) is an

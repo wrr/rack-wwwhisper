@@ -45,7 +45,7 @@ end
 #
 # For each incomming request an authorization query is sent.
 # The query contains a normalized path that a request is
-# trying to access and a wwwhisper session cookies. The
+# trying to access and wwwhisper session cookies. The
 # query result determines the action to be performed:
 # [200] request is allowed and passed down the Rack stack.
 # [401] the user is not authenticated, request is denied, login

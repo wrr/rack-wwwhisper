@@ -37,7 +37,7 @@ end
 
 class TestWWWhisper < Test::Unit::TestCase
   include Rack::Test::Methods
-  WWWHISPER_URL = 'https://example.com'
+  WWWHISPER_URL = 'https://wwwhisper.org'
   SITE_PROTO = 'https'
   SITE_HOST = 'bar.io'
   SITE_PORT = 443
@@ -58,13 +58,6 @@ class TestWWWhisper < Test::Unit::TestCase
     "#{WWWHISPER_URL}#{path}"
   end
 
-  def test_wwwhisper_url_required
-    ENV.delete('WWWHISPER_URL')
-    assert_raise(StandardError) {
-      Rack::WWWhisper.new(@backend)
-    }
-  end
-
   def get path, params={}, rack_env={}
     rack_env['HTTP_HOST'] ||= SITE_HOST
     rack_env['HTTP_X_FORWARDED_PROTO'] ||= SITE_PROTO
@@ -72,13 +65,20 @@ class TestWWWhisper < Test::Unit::TestCase
     super path, params, rack_env
   end
 
+  def granted()
+    {:status => 200, :body => '', :headers => {'User' => TEST_USER}}
+  end
+
+  def test_wwwhisper_url_required
+    ENV.delete('WWWHISPER_URL')
+    assert_raise(StandardError) {
+      Rack::WWWhisper.new(@backend)
+    }
+  end
+
   def test_auth_query_path
     assert_equal('/wwwhisper/auth/api/is-authorized/?path=/foo/bar',
                  @wwwhisper.auth_query('/foo/bar'))
-  end
-
-  def granted()
-    {:status => 200, :body => '', :headers => {'User' => TEST_USER}}
   end
 
   def test_request_allowed
