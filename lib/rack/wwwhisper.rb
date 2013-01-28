@@ -275,12 +275,18 @@ class WWWhisper
   end
 
   def sub_response_to_rack(rack_req, sub_resp)
+    code = sub_resp.code.to_i
     headers = sub_response_headers_to_rack(rack_req, sub_resp)
     body = sub_resp.read_body() || ''
-    if body.length and not headers['Content-Length']
+    if (body.length || 0) != 0 and not headers['Content-Length']
       headers['Content-Length'] = Rack::Utils::bytesize(body).to_s
     end
-    [ sub_resp.code.to_i, headers, [body] ]
+    if code == 204
+      # Rack::Lint complaints if 'Content-Length' is included in 204
+      # response.
+      headers.delete('Content-Length')
+    end
+    [ code, headers, [body] ]
   end
 
   def wwwhisper_auth_request(req)

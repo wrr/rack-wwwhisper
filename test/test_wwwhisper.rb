@@ -167,7 +167,7 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal 'Login', last_response.body
   end
 
-  def test_auth_cookies_passed_to_wwwhisper()
+  def test_auth_cookies_passed_to_wwwhisper
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {
@@ -182,7 +182,7 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 
-  def test_non_wwwhisper_cookies_not_passed_to_wwwhisper()
+  def test_non_wwwhisper_cookies_not_passed_to_wwwhisper
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {
@@ -373,7 +373,7 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_not_nil last_response['Content-Length']
   end
 
-  def test_public_caching_disabled()
+  def test_public_caching_disabled
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       to_return(granted())
