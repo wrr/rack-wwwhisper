@@ -25,7 +25,6 @@ the form `anything@mockmyid.com`.
 
 wwwhisper can be attached to a Heroku application via the CLI.
 
-    :::term
     $ heroku addons:add wwwhisper --admin=[put your email here]
 
 `--admin` is a required parameter that instructs wwwhisper to grant you
@@ -37,7 +36,6 @@ available in the app configuration and will contain the URL to
 communicate with the wwwhisper service. This can be confirmed using the
 `heroku config:get` command.
 
-    :::term
     $ heroku config:get WWWHISPER_URL
     https://user:password@domain
 
@@ -47,12 +45,10 @@ communicate with the wwwhisper service. This can be confirmed using the
 All Ruby applications need to add the following entry into their
 `Gemfile`.
 
-    :::ruby
     gem 'rack-wwwhisper', '~> 1.0'
 
 And then update application dependencies with bundler.
 
-    :::term
     $ bundle install
 
 ###Enabling wwwhisper middleware in Rails.
@@ -60,7 +56,6 @@ And then update application dependencies with bundler.
 To enable wwwhisper middleware for Rails application add a following
 line to `config/environments/production.rb`.
 
-    :::ruby
     config.middleware.insert_after "Rack::Lock", "Rack::WWWhisper"
 
 You can consult [a
@@ -92,7 +87,6 @@ should be put before wwwhisper, otherwise iframe won't be injected.
 
 ## Push the configuration and test the authorization.
 
-    :::term
     $ git commit -m "Enable wwwhisper authorization" -a
     $ git push heroku master
 
@@ -115,12 +109,10 @@ environment variable.
 If you use [Foreman](config-vars#local_setup) to start a local server,
 execute a following command in the application directory.
 
-    :::term
     $ echo WWWHISPER_DISABLE=1 >> .env
 
 If you don't use Foreman, execute.
 
-    :::term
     $ export WWWHISPER_DISABLE=1
 
 
@@ -130,7 +122,6 @@ wwwhisper can be removed via the CLI.
 
 <div class="warning" markdown="1">This will destroy all associated data and cannot be undone!</div>
 
-    :::term
     $ heroku addons:remove wwwhisper
 
 ## A privacy note
