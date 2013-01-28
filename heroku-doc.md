@@ -40,7 +40,7 @@ communicate with the wwwhisper service. This can be confirmed using the
     https://user:password@domain
 
 
-## Using with Ruby.
+## Using with Ruby
 
 All Ruby applications need to add the following entry into their
 `Gemfile`.
@@ -51,10 +51,10 @@ And then update application dependencies with bundler.
 
     $ bundle install
 
-###Enabling wwwhisper middleware in Rails.
+###Enabling wwwhisper middleware in Rails
 
-To enable wwwhisper middleware for Rails application add a following
-line to `config/environments/production.rb`.
+For Rails application add a following line to
+`config/environments/production.rb`.
 
     config.middleware.insert_after "Rack::Lock", "Rack::WWWhisper"
 
@@ -64,8 +64,8 @@ that enabled wwwhisper for a Rails based Typo blog.
 
 ###Enabling wwwhisper middleware for other Rack based applications.
 
-To enable wwwhisper middleware for other Rack based applications add
-following two lines to the `config.ru`:
+For other Rack based applications add following two lines to the
+`config.ru`.
 
     require 'rack/wwwhisper'
     use Rack::WWWhisper
@@ -74,9 +74,9 @@ You can consult [a
 commit](https://github.com/wrr/heroku-sinatra-app/commit/f152a4370d6b1c881f8dd60a91a3f050a8c6389b)
 that enabled wwwhisper for a simple Sinatra application.
 
-## Where to place wwwhisper middleware in the Rack middleware chain?
+### Rack middleware order
 
-Order of Rack middlewares matters. Authentication should be
+Order of Rack middleware matters. Authentication should be
 performed early, before any middleware that produces sensitive
 responses is invoked.
 
@@ -85,7 +85,7 @@ contains an email of currently logged in user and a logout button. If
 Rack is configured to compress responses, compression middleware
 should be put before wwwhisper, otherwise iframe won't be injected.
 
-## Push the configuration and test the authorization.
+### Push the configuration and test the authorization
 
     $ git commit -m "Enable wwwhisper authorization" -a
     $ git push heroku master
@@ -97,7 +97,7 @@ wwwhisper --admin=` command. Visit
 locations can be accessed by which visitors and which should be open
 to everyone.
 
-## Local setup
+### Local setup
 
 It is usually convenient to disable wwwhisper authorization for a
 local development environment. If your application uses separate
@@ -134,6 +134,15 @@ addresses, emails are not disclosed to third parties.
 wwwhisper does not store information which users accessed which
 locations of your application.
 
+## Support
+
+wwwhisper support and runtime issues should be submitted via one of
+the [Heroku Support channels](support-channels). Any non-support
+related issues or product feedback is welcome at
+[[wwwhisper-service@mixedbit.org]]. Issues and feature requests
+related to wwwhisper project in general and not limited to the add-on
+can be also reported via [github](https://github.com/wrr/wwwhisper/issues).
+
 ## Final remarks
 
 For maximum security access wwwhisper protected applications over HTTPS.
@@ -149,13 +158,3 @@ won't be able to restrict access to such content.
 wwwhisper is open source, see [the project repository]
 (https://github.com/wrr/wwwhisper) for a detailed explanation how it
 works.
-
-## Support
-
-wwwhisper support and runtime issues should be submitted via one of
-the [Heroku Support channels](support-channels). Any non-support
-related issues or product feedback is welcome at
-[[wwwhisper-service@mixedbit.org]]. Issues and feature requests
-related to wwwhisper project in general and not limited to the add-on
-can be also reported via [github](https://github.com/wrr/wwwhisper/issues).
-
