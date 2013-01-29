@@ -53,7 +53,7 @@ And then update application dependencies with bundler.
 
 ###Enabling wwwhisper middleware in Rails
 
-For Rails application add a following line to
+For Rails application add the following line to
 `config/environments/production.rb`.
 
     config.middleware.insert_after "Rack::Lock", "Rack::WWWhisper"
@@ -64,7 +64,7 @@ that enabled wwwhisper for a Rails based Typo blog.
 
 ###Enabling wwwhisper middleware for other Rack based applications.
 
-For other Rack based applications add following two lines to the
+For other Rack based applications add the following two lines to the
 `config.ru`.
 
     require 'rack/wwwhisper'
@@ -90,9 +90,9 @@ should be put before wwwhisper, otherwise iframe won't be injected.
     $ git commit -m "Enable wwwhisper authorization" -a
     $ git push heroku master
 
-Visit `https://yourapp-name.herokuapp.com/` you should see a login
-page. sign-in with an email that you have passed to `heroku addons:add
-wwwhisper --admin=` command. Visit
+Visit `https://yourapp-name.herokuapp.com/` you should be presented
+with a login page. Sign-in with an email that you have passed to
+`heroku addons:add wwwhisper --admin=` command. Visit
 `https://yourapp-name.herokuapp.com/wwwhisper/admin/` to specify which
 locations can be accessed by which visitors and which should be open
 to everyone.
@@ -100,14 +100,14 @@ to everyone.
 ### Local setup
 
 It is usually convenient to disable wwwhisper authorization for a
-local development environment. If your application uses separate
-config files for development (for example
+local development environment. If your application use a separate
+config file for development (for example
 `config/environments/development.rb` in case of Rails) you don't need
 to do anything, otherwise you need to set `WWWHISPER_DISABLE=1`
 environment variable.
 
 If you use [Foreman](config-vars#local_setup) to start a local server,
-execute a following command in the application directory.
+execute the following command in the application directory.
 
     $ echo WWWHISPER_DISABLE=1 >> .env
 
@@ -139,9 +139,9 @@ locations of your application.
 wwwhisper support and runtime issues should be submitted via one of
 the [Heroku Support channels](support-channels). Any non-support
 related issues or product feedback is welcome at
-[[wwwhisper-service@mixedbit.org]]. Issues and feature requests
+wwwhisper-service@mixedbit.org. Issues and feature requests
 related to wwwhisper project in general and not limited to the add-on
-can be also reported via [github](https://github.com/wrr/wwwhisper/issues).
+can be also reported via [github](https://github.com/wrr/wwwhisper).
 
 ## Final remarks
 
@@ -150,7 +150,7 @@ For maximum security access wwwhisper protected applications over HTTPS.
 Your application can retrieve an email of authenticated user from a Rack
 environment variable `REMOTE_USER`.
 
-wwwhisper authorizes access only to content served by the Heroku
+wwwhisper authorizes access to content served by a Heroku
 application. If you put sensitive content on external servers that do
 not require authorization (for example Amazon CloudFront), wwwhisper
 won't be able to restrict access to such content.
