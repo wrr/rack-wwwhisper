@@ -269,8 +269,12 @@ class WWWhisper
       end
       # If sub request returned chunked response, remove the header
       # (chunks will be combined and returned with 'Content-Length).
-      rack_headers[header] = value if header != 'Transfer-Encoding'
+      rack_headers[header] = value if header !~ /Transfer-Encoding|Set-Cookie/
     end
+    # Multiple Set-Cookie headers need to be set as a single value
+    # separated by \n (see Rack SPEC).
+    cookies = sub_resp.get_fields('Set-Cookie')
+    rack_headers['Set-Cookie'] = cookies.join("\n") if cookies
     return rack_headers
   end
 
@@ -278,13 +282,12 @@ class WWWhisper
     code = sub_resp.code.to_i
     headers = sub_response_headers_to_rack(rack_req, sub_resp)
     body = sub_resp.read_body() || ''
-    if (body.length || 0) != 0 and not headers['Content-Length']
-      headers['Content-Length'] = Rack::Utils::bytesize(body).to_s
-    end
-    if code == 204
-      # Rack::Lint complaints if 'Content-Length' is included in 204
-      # response.
+    if code < 200 or [204, 205, 304].include?(code)
+      # See Rack SPEC.
       headers.delete('Content-Length')
+      headers.delete('Content-Type')
+    elsif (body.length || 0) != 0 and not headers['Content-Length']
+      headers['Content-Length'] = Rack::Utils::bytesize(body).to_s
     end
     [ code, headers, [body] ]
   end
