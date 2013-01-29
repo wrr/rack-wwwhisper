@@ -70,8 +70,10 @@ class WWWhisper
                          'X-Requested-With']
   @@DEFAULT_IFRAME = \
 %Q[<iframe id="wwwhisper-iframe" src="%s" width="340" height="29"
- style="position:fixed; overflow:hidden; border:0px; bottom:0px;
- right:0px; z-index:11235; background-color:transparent;"> </iframe>
+ frameborder="0" scrolling="no" style="position:fixed; overflow:hidden;
+ border:0px; bottom:0px; right:0px; z-index:11235;
+ background-color:transparent;">
+ </iframe>
 ]
 
   # Following environment variables are recognized:
