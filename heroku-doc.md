@@ -51,9 +51,9 @@ And then update application dependencies with bundler.
 
     $ bundle install
 
-###Enabling wwwhisper middleware for Rails applications
+###Enabling wwwhisper middleware for a Rails application
 
-For Rails application add the following line to
+For a Rails application add the following line to
 `config/environments/production.rb`.
 
     config.middleware.insert_after "Rack::Lock", "Rack::WWWhisper"
@@ -62,7 +62,7 @@ You can consult [a
 commit](https://github.com/wrr/typo/commit/70acd99924dd59fab45efccc426233a2d9ee4f7e)
 that enabled wwwhisper for a Rails based Typo blog.
 
-###Enabling wwwhisper middleware for other Rack based applications
+###Enabling wwwhisper middleware for other Rack based application
 
 For other Rack based applications add the following two lines to the
 `config.ru`.
