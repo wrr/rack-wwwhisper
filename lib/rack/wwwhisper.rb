@@ -66,8 +66,8 @@ class WWWhisper
   @@AUTH_COOKIES_PREFIX = 'wwwhisper'
   # Headers that are passed to wwwhisper ('Cookie' is handled
   # in a special way: only wwwhisper related cookies are passed).
-  @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'X-CSRFToken',
-                         'X-Requested-With']
+  @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'Origin',
+                         'X-CSRFToken', 'X-Requested-With']
   @@DEFAULT_IFRAME = \
 %Q[<iframe id="wwwhisper-iframe" src="%s" width="340" height="29"
  frameborder="0" scrolling="no" style="position:fixed; overflow:hidden;
@@ -181,7 +181,7 @@ class WWWhisper
       else
         @scheme = env['HTTP_X_FORWARDED_PROTO'] || 'http'
         @host, port_from_host = env['HTTP_HOST'].split(/:/)
-        @port = env['HTTP_X_FORWARDED_PORT'] || port_from_host ||
+        @port = env['HTTP_X_FORWARDED_PORT'].to_i || port_from_host.to_i ||
           default_port(@scheme)
         port_str = @port != default_port(@scheme) ? ":#{@port}" : ""
         @site_url = "#{@scheme}://#{@host}#{port_str}"
