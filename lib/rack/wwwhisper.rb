@@ -181,8 +181,8 @@ class WWWhisper
       else
         @scheme = env['HTTP_X_FORWARDED_PROTO'] || 'http'
         @host, port_from_host = env['HTTP_HOST'].split(/:/)
-        @port = env['HTTP_X_FORWARDED_PORT'].to_i || port_from_host.to_i ||
-          default_port(@scheme)
+        @port = (env['HTTP_X_FORWARDED_PORT'] || port_from_host ||
+          default_port(@scheme)).to_i
         port_str = @port != default_port(@scheme) ? ":#{@port}" : ""
         @site_url = "#{@scheme}://#{@host}#{port_str}"
       end
