@@ -25,11 +25,13 @@ the form `anything@mockmyid.com`.
 
 wwwhisper can be attached to a Heroku application via the CLI.
 
-    $ heroku addons:add wwwhisper --admin=[put your email here]
+    $ heroku addons:add wwwhisper [--admin=your_email]
 
-`--admin` is a required parameter that instructs wwwhisper to grant you
-access to the application. Later you can use the wwwhisper admin site
-to grant access to others.
+`--admin` is an optional parameter that instructs wwwhisper who should
+be allowed to initially access the application. If `--admin` is not
+specified, or if the add-on is provisioned via Heroku web UI, your
+Heroku application owner email is used. Later you can use the
+wwwhisper admin site to grant access to others.
 
 Once the add-on has been added a `WWWHISPER_URL` setting will be
 available in the app configuration and will contain the URL to
@@ -91,11 +93,10 @@ should be put before wwwhisper, otherwise iframe won't be injected.
     $ git push heroku master
 
 Visit `https://yourapp-name.herokuapp.com/` you should be presented
-with a login page. Sign-in with an email that you have passed to
-`heroku addons:add wwwhisper --admin=` command. Visit
+with a login page. Sign-in with your email. Visit
 `https://yourapp-name.herokuapp.com/wwwhisper/admin/` to specify which
-locations can be accessed by which visitors and which should be open
-to everyone.
+locations can be accessed by which visitors and which (if any) should
+be open to everyone.
 
 ### Local setup
 
