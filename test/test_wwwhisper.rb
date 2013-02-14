@@ -260,21 +260,17 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal 'invalid request', last_response.body
   end
 
-  def test_x_forwarded_headers
+  def test_site_url
     path = '/wwwhisper/admin/index.html'
 
     # X-Forwarded headers must be sent to wwwhisper backend.
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {
-             'X-Forwarded-Host' => SITE_HOST,
-             'X-Forwarded-Proto' => SITE_PROTO,
+             'Site-url' =>  "#{SITE_PROTO}://#{SITE_HOST}"
            }).
       to_return(granted())
     stub_request(:get, full_url(path)).
-      with(:headers => {
-             'X-Forwarded-Host' => SITE_HOST,
-             'X-Forwarded-Proto' => SITE_PROTO,
-           }).
+      with(:headers => {'Site-url' =>  "#{SITE_PROTO}://#{SITE_HOST}"}).
       to_return(:status => 200, :body => 'Admin page', :headers => {})
 
     get path
@@ -290,7 +286,7 @@ class TestWWWhisper < Test::Unit::TestCase
     host = 'localhost:5000'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       # Test makes sure that port is not repeated in Site-Url.
-      with(:headers => {'X-Forwarded-Host' => host}).
+      with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{host}"}).
       to_return(:status => 401, :body => 'Login required', :headers => {})
 
     get(path, {}, {'HTTP_HOST' => host})

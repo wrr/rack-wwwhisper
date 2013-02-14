@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'rack-wwwhisper'
-  s.version     = '1.1.0'
+  s.version     = '1.1.1'
   s.platform    = Gem::Platform::RUBY
   s.date        = '2013-02-14'
   s.summary     = 'Persona based authorization layer for Rack applications.'

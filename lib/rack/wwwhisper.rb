@@ -58,9 +58,9 @@ class WWWhisper
   @@AUTH_COOKIES_PREFIX = 'wwwhisper'
   # Headers that are passed to wwwhisper ('Cookie' is handled
   # in a special way: only wwwhisper related cookies are passed).
-  # In addition, the original Host header is passed as X-Forwarded-Host.
+  # In addition, the current site url is passed in the Site-Url header.
   @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'Origin',
-                         'X-CSRFToken', 'X-Forwarded-Proto', 'X-Requested-With']
+                         'X-CSRFToken', 'X-Requested-With']
   @@DEFAULT_IFRAME = \
 %Q[<iframe id="wwwhisper-iframe" src="%s" width="340" height="29"
  frameborder="0" scrolling="no" style="position:fixed; overflow:hidden;
@@ -177,8 +177,8 @@ class WWWhisper
   def sub_request_init(rack_req, method, path)
     sub_req = Net::HTTP.const_get(method).new(path)
     copy_headers(rack_req.env, sub_req)
-    sub_req['X-Forwarded-Host'] = rack_req.env['HTTP_HOST']
-    sub_req['X-Forwarded-Proto'] ||=  rack_req.scheme
+    scheme = rack_req.env['HTTP_X_FORWARDED_PROTO'] ||=  rack_req.scheme
+    sub_req['Site-Url'] = "#{scheme}://#{rack_req.env['HTTP_HOST']}"
     if @wwwhisper_uri.user and @wwwhisper_uri.password
       sub_req.basic_auth(@wwwhisper_uri.user, @wwwhisper_uri.password)
     end
