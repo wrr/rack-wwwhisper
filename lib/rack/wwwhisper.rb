@@ -36,7 +36,6 @@ class NoPublicCache
     end
     [status, headers, body]
   end
-
 end
 
 # Communicates with the wwwhisper service to authorize each incomming
@@ -52,22 +51,16 @@ end
 #       page is returned.
 # [403] the user is not authorized, request is denied, error is returned.
 # [any other] error while communicating with wwwhisper, request is denied.
-#
-# For Persona assertion verification the middleware depends on a
-# 'Host' header being verified by a frontend server. This is true on
-# Heroku, where the 'Host' header is rewritten if a request sets it to
-# incorrect value.  If the frontend server does does not perform such
-# verification, SITE_URL environment variable must be set to enforce a
-# valid url (for example `export SITE_URL="\https://example.com"`).
 class WWWhisper
-  # Requests to locations starting with this prefix are passed to wwwhisper.
+  # Path prefix of requests that are passed to wwwhisper.
   @@WWWHISPER_PREFIX = '/wwwhisper/'
-  # Cookies starting with this prefix are passed to wwwhisper.
+  # Name prefix of cookies that are passed to wwwhisper.
   @@AUTH_COOKIES_PREFIX = 'wwwhisper'
   # Headers that are passed to wwwhisper ('Cookie' is handled
   # in a special way: only wwwhisper related cookies are passed).
+  # In addition, the original Host header is passed as X-Forwarded-Host.
   @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'Origin',
-                         'X-CSRFToken', 'X-Requested-With']
+                         'X-CSRFToken', 'X-Forwarded-Proto', 'X-Requested-With']
   @@DEFAULT_IFRAME = \
 %Q[<iframe id="wwwhisper-iframe" src="%s" width="340" height="29"
  frameborder="0" scrolling="no" style="position:fixed; overflow:hidden;
@@ -88,9 +81,6 @@ class WWWhisper
   #
   # 3. WWWHISPER_IFRAME: an HTML snippet that should be injected to
   #    returned HTML documents (has a default value).
-  #
-  # 4. SITE_URL: must be set if the frontend server does not validate
-  #    the Host header.
   def initialize(app)
     @app = app
     if ENV['WWWHISPER_DISABLE'] == "1"
@@ -126,13 +116,14 @@ class WWWhisper
 
   def call(env)
     req = Request.new(env)
+    normalize_path(req)
 
     # Requests to /@@WWWHISPER_PREFIX/auth/ should not be authorized,
     # every visitor can access login pages.
     return dispatch(req) if req.path =~ %r{^#{wwwhisper_path('auth')}}
 
     debug req, "sending auth request for #{req.path}"
-    auth_resp = wwwhisper_auth_request(req)
+    auth_resp = auth_request(req)
 
     if auth_resp.code == '200'
       debug req, 'access granted'
@@ -153,59 +144,6 @@ class WWWhisper
   end
 
   private
-  # Extends Rack::Request with more conservative scheme, host and port
-  # setting rules. Rack::Request tries to obtain these values from
-  # mutiple sources, whereas for wwwhisper it is crucial that the
-  # values are not spoofed by the client.
-  #
-  # If SITE_URL environemnt variable is set: scheme, host and port are
-  # always taken directly from it.
-  #
-  # If SITE_URL is not set, scheme is taken from the X-Forwarded-Proto
-  # header, host is taken from the 'Host' header and port is taken
-  # from the X-Forwarded-Port header. The frontend must ensure these
-  # values can not be spoofed by client (a request to example.com,
-  # that carries a Host header 'example.org' should be dropped or
-  # rewritten).
-  class Request < Rack::Request
-    attr_reader :scheme, :host, :port, :site_url
-
-    def initialize(env)
-      super(env)
-      normalize_path
-      if (@site_url = ENV['SITE_URL'])
-        uri = Addressable::URI.parse(@site_url)
-        @scheme = uri.scheme
-        @host = uri.host
-        @port = uri.port || default_port(@scheme)
-      else
-        @scheme = env['HTTP_X_FORWARDED_PROTO'] || 'http'
-        @host, port_from_host = env['HTTP_HOST'].split(/:/)
-        @port = (env['HTTP_X_FORWARDED_PORT'] || port_from_host ||
-          default_port(@scheme)).to_i
-        port_str = @port != default_port(@scheme) ? ":#{@port}" : ""
-        @site_url = "#{@scheme}://#{@host}#{port_str}"
-      end
-    end
-
-    private
-    def normalize_path
-      self.script_name =
-        Addressable::URI.normalize_path(script_name).squeeze('/')
-      self.path_info =
-        Addressable::URI.normalize_path(path_info).squeeze('/')
-      # Avoid /foo/ /bar being combined into /foo//bar
-      self.script_name.chomp!('/') if self.path_info[0] == ?/
-    end
-
-    def default_port(proto)
-      {
-        'http' => 80,
-        'https' => 443,
-      }[proto]
-    end
-  end
-
   def debug(req, message)
     req.logger.debug "wwwhisper #{message}" if req.logger
   end
@@ -227,18 +165,28 @@ class WWWhisper
     return http
   end
 
+  def normalize_path(req)
+    req.script_name =
+      Addressable::URI.normalize_path(req.script_name).squeeze('/')
+    req.path_info =
+      Addressable::URI.normalize_path(req.path_info).squeeze('/')
+    # Avoid /foo/ and /bar being combined into /foo//bar
+    req.script_name.chomp!('/') if req.path_info[0] == ?/
+  end
+
   def sub_request_init(rack_req, method, path)
     sub_req = Net::HTTP.const_get(method).new(path)
-    copy_headers(@@FORWARDED_HEADERS, rack_req.env, sub_req)
-    sub_req['Site-Url'] = rack_req.site_url
+    copy_headers(rack_req.env, sub_req)
+    sub_req['X-Forwarded-Host'] = rack_req.env['HTTP_HOST']
+    sub_req['X-Forwarded-Proto'] ||=  rack_req.scheme
     if @wwwhisper_uri.user and @wwwhisper_uri.password
       sub_req.basic_auth(@wwwhisper_uri.user, @wwwhisper_uri.password)
     end
     sub_req
   end
 
-  def copy_headers(headers_names, env, sub_req)
-    headers_names.each do |header|
+  def copy_headers(env, sub_req)
+    @@FORWARDED_HEADERS.each do |header|
       key = "HTTP_#{header.upcase}".gsub(/-/, '_')
       value = env[key]
       if value and key == 'HTTP_COOKIE'
@@ -263,12 +211,6 @@ class WWWhisper
   def sub_response_headers_to_rack(rack_req, sub_resp)
     rack_headers = Rack::Utils::HeaderHash.new()
     sub_resp.each_capitalized do |header, value|
-      if header == 'Location'
-        location = Addressable::URI.parse(value)
-        location.scheme, location.host, location.port =
-          rack_req.scheme, rack_req.host, rack_req.port
-        value = location.to_s
-      end
       # If sub request returned chunked response, remove the header
       # (chunks will be combined and returned with 'Content-Length).
       rack_headers[header] = value if header !~ /Transfer-Encoding|Set-Cookie/
@@ -285,7 +227,7 @@ class WWWhisper
     headers = sub_response_headers_to_rack(rack_req, sub_resp)
     body = sub_resp.read_body() || ''
     if code < 200 or [204, 205, 304].include?(code)
-      # See Rack SPEC.
+      # To make sure Rack SPEC is respected.
       headers.delete('Content-Length')
       headers.delete('Content-Type')
     elsif (body.length || 0) != 0 and not headers['Content-Length']
@@ -294,7 +236,7 @@ class WWWhisper
     [ code, headers, [body] ]
   end
 
-  def wwwhisper_auth_request(req)
+  def auth_request(req)
     auth_req = sub_request_init(req, 'Get', auth_query(req.path))
     @http.request(@wwwhisper_uri, auth_req)
   end

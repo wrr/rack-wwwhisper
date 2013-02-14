@@ -40,7 +40,6 @@ class TestWWWhisper < Test::Unit::TestCase
   WWWHISPER_URL = 'https://wwwhisper.org'
   SITE_PROTO = 'https'
   SITE_HOST = 'bar.io'
-  SITE_PORT = 443
 
   def setup()
     @backend = MockBackend.new(TEST_USER)
@@ -61,7 +60,6 @@ class TestWWWhisper < Test::Unit::TestCase
   def get path, params={}, rack_env={}
     rack_env['HTTP_HOST'] ||= SITE_HOST
     rack_env['HTTP_X_FORWARDED_PROTO'] ||= SITE_PROTO
-    rack_env['HTTP_X_FORWARDED_PORT'] ||= SITE_PORT
     super path, params, rack_env
   end
 
@@ -262,15 +260,21 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal 'invalid request', last_response.body
   end
 
-  def test_site_url
+  def test_x_forwarded_headers
     path = '/wwwhisper/admin/index.html'
 
-    # Site-Url header should be sent to wwwhisper backend.
+    # X-Forwarded headers must be sent to wwwhisper backend.
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{SITE_HOST}"}).
+      with(:headers => {
+             'X-Forwarded-Host' => SITE_HOST,
+             'X-Forwarded-Proto' => SITE_PROTO,
+           }).
       to_return(granted())
     stub_request(:get, full_url(path)).
-      with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{SITE_HOST}"}).
+      with(:headers => {
+             'X-Forwarded-Host' => SITE_HOST,
+             'X-Forwarded-Proto' => SITE_PROTO,
+           }).
       to_return(:status => 200, :body => 'Admin page', :headers => {})
 
     get path
@@ -279,27 +283,6 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_equal 'Admin page', last_response.body
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
     assert_requested :get, full_url(path)
-  end
-
-  def test_explicit_site_url_takes_precedense
-    path = '/wwwhisper/admin/index.html'
-
-    site_url = 'https://foo.bar.com'
-    ENV['SITE_URL'] = site_url
-    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      with(:headers => {'Site-Url' => site_url}).
-      to_return(granted())
-    stub_request(:get, full_url(path)).
-      with(:headers => {'Site-Url' => site_url}).
-      to_return(:status => 200, :body => 'Admin page', :headers => {})
-
-    get path
-    assert last_response.ok?
-    assert_equal 200, last_response.status
-    assert_equal 'Admin page', last_response.body
-    assert_requested :get, full_url(@wwwhisper.auth_query(path))
-    assert_requested :get, full_url(path)
-    ENV['SITE_URL'] = site_url
   end
 
   def test_host_with_port
@@ -307,46 +290,12 @@ class TestWWWhisper < Test::Unit::TestCase
     host = 'localhost:5000'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       # Test makes sure that port is not repeated in Site-Url.
-      with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{host}"}).
+      with(:headers => {'X-Forwarded-Host' => host}).
       to_return(:status => 401, :body => 'Login required', :headers => {})
 
-    # TODO: start here
-    get(path, {}, {'HTTP_HOST' => host, 'HTTP_X_FORWARDED_PORT' => '5000'})
+    get(path, {}, {'HTTP_HOST' => host})
     assert_equal 401, last_response.status
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
-  end
-
-  def test_site_url_with_non_default_port
-    path = '/foo/bar'
-    port = 11235
-    # Site-Url header should be sent to wwwhisper backend but not to
-    # assets server.
-    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      with(:headers => {'Site-Url' => "#{SITE_PROTO}://#{SITE_HOST}:#{port}"}).
-      to_return(:status => 400, :body => '', :headers => {})
-
-    get(path, {}, {'HTTP_X_FORWARDED_PORT' => port.to_s})
-    assert !last_response.ok?
-    assert_equal 400, last_response.status
-    assert_requested :get, full_url(@wwwhisper.auth_query(path))
-  end
-
-  def test_redirects
-    path = '/wwwhisper/admin/index.html'
-    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
-      to_return(granted())
-    stub_request(:get, full_url(path)).
-      to_return(:status => 303, :body => 'Admin page moved',
-                :headers => {'Location' => 'https://new.location/foo/bar'})
-
-    get path
-    assert !last_response.ok?
-    assert_equal 303, last_response.status
-    assert_equal 'Admin page moved', last_response.body
-    assert_equal("#{SITE_PROTO}://#{SITE_HOST}:#{SITE_PORT}/foo/bar",
-                 last_response['Location'])
-    assert_requested :get, full_url(@wwwhisper.auth_query(path))
-    assert_requested :get, full_url(path)
   end
 
   def test_disable_wwwhisper
