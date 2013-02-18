@@ -100,6 +100,8 @@ be open to everyone.
 
 ### Local setup
 
+#### Disable wwwhisper locally
+
 It is usually convenient to disable wwwhisper authorization for a
 local development environment. If your application uses a separate
 config file for development (for example
@@ -116,7 +118,7 @@ If you don't use Foreman, execute.
 
     $ export WWWHISPER_DISABLE=1
 
-
+#### Use wwwhisper locally
 
 If you want to use the wwwhisper service locally, copy WWWHISPER_URL
 variable from the Heroku config. If you use Foreman, execute.
