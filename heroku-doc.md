@@ -29,7 +29,7 @@ wwwhisper can be attached to a Heroku application via the CLI.
 
 `--admin` is an optional parameter that instructs wwwhisper who should
 be allowed to initially access the application. If `--admin` is not
-specified, or if the add-on is provisioned via Heroku web UI, your
+given, or if the add-on is provisioned via Heroku web UI, your
 Heroku application owner email is used. Later you can use the
 wwwhisper admin site to grant access to others.
 
@@ -101,7 +101,7 @@ be open to everyone.
 ### Local setup
 
 It is usually convenient to disable wwwhisper authorization for a
-local development environment. If your application use a separate
+local development environment. If your application uses a separate
 config file for development (for example
 `config/environments/development.rb` in case of Rails) you don't need
 to do anything, otherwise you need to set `WWWHISPER_DISABLE=1`
@@ -116,6 +116,15 @@ If you don't use Foreman, execute.
 
     $ export WWWHISPER_DISABLE=1
 
+
+
+If you want to use the wwwhisper service locally, copy WWWHISPER_URL
+variable from the Heroku config. If you use Foreman, execute.
+
+    $ echo WWWHISPER_URL=`heroku config:get WWWHISPER_URL` >> .env
+
+If you don't use Foreman, execute.
+    $ export WWWHISPER_URL=`heroku config:get WWWHISPER_URL`
 
 ## Removing the add-on
 
