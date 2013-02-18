@@ -9,7 +9,8 @@ The add-on lets you specify emails of users that are allowed to access
 the application. [Persona](https://persona.org) is used to smoothly
 and securely prove that a visitor owns an allowed email. Persona works
 out of a box with any modern browser. It removes a need for
-site-specific passwords, making passwords management a non-issue.
+site-specific passwords, making passwords management a non-issue for
+you.
 
 Integration with wwwhisper service is provided via Rack middleware
 which can be used with any Rails or Rack based application. This
