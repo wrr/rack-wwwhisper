@@ -27,11 +27,11 @@ wwwhisper can be attached to a Heroku application via the CLI.
 
     $ heroku addons:add wwwhisper [--admin=your_email]
 
-`--admin` is an optional parameter that instructs wwwhisper who should
-be allowed to initially access the application. If `--admin` is not
-given, or if the add-on is provisioned via Heroku web UI, your
-Heroku application owner email is used. Later you can use the
-wwwhisper admin site to grant access to others.
+`--admin` is an optional parameter that specifies who should be
+allowed to initially access the application. If `--admin` is not
+given, or if the add-on is provisioned via Heroku web UI, your Heroku
+application owner email is used. Later you can use the wwwhisper admin
+site to grant access to others.
 
 Once the add-on has been added a `WWWHISPER_URL` setting will be
 available in the app configuration and will contain the URL to
@@ -85,7 +85,7 @@ responses is invoked.
 wwwhisper by default inserts an iframe to HTML responses. The iframe
 contains an email of currently logged in user and a logout button. If
 Rack is configured to compress responses, compression middleware
-should be put before wwwhisper, otherwise iframe won't be injected.
+should be put before wwwhisper, otherwise iframe won't be inserted.
 
 ### Push the configuration and test the authorization
 
@@ -124,6 +124,7 @@ variable from the Heroku config. If you use Foreman, execute.
     $ echo WWWHISPER_URL=`heroku config:get WWWHISPER_URL` >> .env
 
 If you don't use Foreman, execute.
+
     $ export WWWHISPER_URL=`heroku config:get WWWHISPER_URL`
 
 ## Removing the add-on
