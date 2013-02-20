@@ -126,7 +126,7 @@ class TestWWWhisper < Test::Unit::TestCase
 
     get path
     assert last_response.ok?
-    assert_match(/.*<iframe id="wwwhisper-iframe".*/, last_response.body)
+    assert_match(/.*<script.*src="\/wwwhisper.*/, last_response.body)
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 

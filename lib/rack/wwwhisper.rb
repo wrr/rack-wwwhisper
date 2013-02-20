@@ -61,12 +61,7 @@ class WWWhisper
   # In addition, the current site url is passed in the Site-Url header.
   @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'Origin',
                          'X-CSRFToken', 'X-Requested-With']
-  @@DEFAULT_IFRAME = \
-%Q[<iframe id="wwwhisper-iframe" src="%s" width="340" height="29"
- frameborder="0" scrolling="no" style="position:fixed; overflow:hidden;
- border:0px; bottom:0px; right:0px; z-index:11235;
- background-color:transparent;">
- </iframe>
+  @@DEFAULT_IFRAME = %Q[<script type="text/javascript" src="%s"> </script>
 ]
 
   # Following environment variables are recognized:
@@ -79,8 +74,8 @@ class WWWhisper
   #    the sites are treated as one: access control rules defined for
   #    one site, apply to the other site.
   #
-  # 3. WWWHISPER_IFRAME: an HTML snippet that should be injected to
-  #    returned HTML documents (has a default value).
+  # 3. WWWHISPER_IFRAME: an HTML snippet to be injected into returned
+  #    HTML documents (has a default value).
   def initialize(app)
     @app = app
     if ENV['WWWHISPER_DISABLE'] == "1"
@@ -100,7 +95,7 @@ class WWWhisper
     @wwwhisper_uri = parse_uri(ENV['WWWHISPER_URL'])
 
     @wwwhisper_iframe = ENV['WWWHISPER_IFRAME'] ||
-      sprintf(@@DEFAULT_IFRAME, wwwhisper_path('auth/overlay.html'))
+      sprintf(@@DEFAULT_IFRAME, wwwhisper_path('auth/iframe.js'))
     @wwwhisper_iframe_bytesize = Rack::Utils::bytesize(@wwwhisper_iframe)
   end
 
