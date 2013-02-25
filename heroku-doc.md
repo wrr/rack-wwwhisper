@@ -18,9 +18,9 @@ which can be used with any Rails or Rack based application. This
 minimizes integration cost, there is no need to modify your
 application code and explicitly call wwwhisper API.
 
-A demo of a wwwhisper authorized site is available at
-https://wwwhisper-demo.herokuapp.com/. The site is configured to allow
-everyone access. You can sign-in with your email or with any email in
+You can visit [a demo site](https://wwwhisper-demo.herokuapp.com/)
+authorized by the wwwhisper add-on. The site is configured to allow
+everyone access,  sign-in with your email or with any email in
 the form `anything@mockmyid.com`.
 
 ## Provisioning the add-on
@@ -46,7 +46,7 @@ communicate with the wwwhisper service. This can be confirmed using the
     https://user:password@domain
 
 
-## Using with Ruby (Rails or other Rack based applications)
+## Using with Ruby on Rails or other Rack based applications
 
 All Ruby applications need to add the following entry into their
 `Gemfile`.
@@ -177,16 +177,13 @@ can be also reported via [github](https://github.com/wrr/wwwhisper).
 
 ## Final remarks
 
-For maximum security access wwwhisper protected applications over HTTPS.
-
-Your application can retrieve an email of authenticated user from a Rack
-environment variable `REMOTE_USER`.
-
-wwwhisper authorizes access to content served by a Heroku
-application. If you put sensitive content on external servers that do
-not require authorization (for example Amazon CloudFront), wwwhisper
-won't be able to restrict access to such content.
-
-wwwhisper is open source, see [the project repository]
-(https://github.com/wrr/wwwhisper) for a detailed explanation how it
-works.
+* For maximum security access wwwhisper protected applications over HTTPS.
+* Your application can retrieve an email of authenticated user from a
+  Rack environment variable `REMOTE_USER`.
+* wwwhisper authorizes access to content served by a Heroku
+  application. If you put sensitive content on external servers that do
+  not require authorization (for example Amazon CloudFront), wwwhisper
+  won't be able to restrict access to such content.
+* wwwhisper is open source, see
+  [the project repository] (https://github.com/wrr/wwwhisper)
+  for a detailed explanation of how it works.
