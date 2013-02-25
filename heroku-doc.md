@@ -5,8 +5,9 @@ wwwhisper-service@mixedbit.org.
 [add-on](http://addons.heroku.com) for authorizing access to Heroku
 applications.
 
-The add-on lets you specify emails of users that are allowed to access
-the application. [Persona](https://persona.org) is used to smoothly
+The add-on provides a web interface to specify emails of users that
+are allowed to access your application. Each visitor is presented with
+a login prompt, [Persona](https://persona.org) is used to smoothly
 and securely prove that a visitor owns an allowed email. Persona works
 out of a box with any modern browser. It removes the need for
 site-specific passwords, making passwords management a non-issue for
@@ -17,7 +18,7 @@ which can be used with any Rails or Rack based application. This
 minimizes integration cost, there is no need to modify your
 application code and explicitly call wwwhisper API.
 
-A demo of wwwhisper authorized site is available at
+A demo of a wwwhisper authorized site is available at
 https://wwwhisper-demo.herokuapp.com/. The site is configured to allow
 everyone access. You can sign-in with your email or with any email in
 the form `anything@mockmyid.com`.
@@ -81,7 +82,7 @@ For other Rack based applications add the following two lines to the
 
 You can consult [a
 commit](https://github.com/wrr/heroku-sinatra-app/commit/f152a4370d6b1c881f8dd60a91a3f050a8c6389b)
-that enabled wwwhisper for a simple Sinatra application.
+that enabled wwwhisper for a Sinatra application.
 
 ### Rack middleware order
 
@@ -92,7 +93,8 @@ responses is invoked.
 wwwhisper by default inserts an iframe to HTML responses. The iframe
 contains an email of currently logged in user and a logout button. If
 Rack is configured to compress responses, compression middleware
-should be put before wwwhisper, otherwise iframe won't be inserted.
+should be put before wwwhisper, otherwise the iframe won't be
+inserted.
 
 ### Push the configuration and test the authorization
 
