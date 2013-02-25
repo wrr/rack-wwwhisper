@@ -26,6 +26,7 @@ the form `anything@mockmyid.com`.
 
 wwwhisper can be attached to a Heroku application via the CLI.
 
+    :::term
     $ heroku addons:add wwwhisper [--admin=your_email]
 
 `--admin` is an optional parameter that specifies who should be
@@ -39,19 +40,22 @@ available in the app configuration and will contain the URL to
 communicate with the wwwhisper service. This can be confirmed using the
 `heroku config:get` command.
 
+    :::term
     $ heroku config:get WWWHISPER_URL
     https://user:password@domain
 
 
-## Using with Ruby
+## Using with Ruby (Rails or other Rack based applications)
 
 All Ruby applications need to add the following entry into their
 `Gemfile`.
 
+    :::ruby
     gem 'rack-wwwhisper', '~> 1.0'
 
 And then update application dependencies with bundler.
 
+    :::term
     $ bundle install
 
 ###Enabling wwwhisper middleware for a Rails application
@@ -59,6 +63,7 @@ And then update application dependencies with bundler.
 For a Rails application add the following line to
 `config/environments/production.rb`.
 
+    :::ruby
     config.middleware.insert_after "Rack::Lock", "Rack::WWWhisper"
 
 You can consult [a
@@ -70,6 +75,7 @@ that enabled wwwhisper for a Rails based Typo blog.
 For other Rack based applications add the following two lines to the
 `config.ru`.
 
+    :::ruby
     require 'rack/wwwhisper'
     use Rack::WWWhisper
 
@@ -90,6 +96,7 @@ should be put before wwwhisper, otherwise iframe won't be inserted.
 
 ### Push the configuration and test the authorization
 
+    :::term
     $ git commit -m "Enable wwwhisper authorization" -a
     $ git push heroku master
 
@@ -113,10 +120,12 @@ environment variable.
 If you use [Foreman](config-vars#local_setup) to start a local server,
 execute the following command in the application directory.
 
+    :::term
     $ echo WWWHISPER_DISABLE=1 >> .env
 
 If you don't use Foreman, execute.
 
+    :::term
     $ export WWWHISPER_DISABLE=1
 
 #### Use wwwhisper locally
@@ -124,10 +133,16 @@ If you don't use Foreman, execute.
 If you want to use the wwwhisper service locally, copy WWWHISPER_URL
 variable from the Heroku config. If you use Foreman, execute.
 
+    :::term
     $ echo WWWHISPER_URL=`heroku config:get WWWHISPER_URL` >> .env
+
+<p class="warning" markdown="1"> Credentials and other sensitive
+configuration values should not be committed to source-control. In Git
+exclude the .env file with: `echo .env >> .gitignore`. </p>
 
 If you don't use Foreman, execute.
 
+    :::term
     $ export WWWHISPER_URL=`heroku config:get WWWHISPER_URL`
 
 ## Removing the add-on
@@ -136,6 +151,7 @@ wwwhisper can be removed via the CLI.
 
 <div class="warning" markdown="1">This will destroy all associated data and cannot be undone!</div>
 
+    :::term
     $ heroku addons:remove wwwhisper
 
 ## A privacy note
