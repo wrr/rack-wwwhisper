@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.email       = 'wrr@mixedbit.org'
   s.files       = [
                    'lib/rack/wwwhisper.rb',
+                   'lib/rack/wwwhisper_version.rb',
                    'test/test_wwwhisper.rb',
                    'Rakefile',
                   ]
