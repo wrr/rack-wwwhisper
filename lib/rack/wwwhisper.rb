@@ -10,34 +10,6 @@ require 'rack/utils'
 
 module Rack
 
-# An internal middleware used by Rack::WWWhisper to change directives
-# that enable public caching into directives that enable private
-# caching.
-#
-# To be on a safe side, all wwwhisper protected content is treated as
-# sensitive and not publicly cacheable.
-class NoPublicCache
-  def initialize(app)
-    @app = app
-  end
-
-  # If a response enables caching, makes sure it is private.
-  def call(env)
-    status, headers, body = @app.call(env)
-    if cache_control = headers['Cache-Control']
-      cache_control = cache_control.gsub(/public/, 'private')
-      if (not cache_control.include? 'private' and
-          cache_control.index(/max-age\s*=\s*0*[1-9]/))
-        # max-age > 0 without 'public' or 'private' directive is
-        # treated as 'public', so 'private' needs to be prepended.
-        cache_control.insert(0, 'private, ')
-      end
-      headers['Cache-Control'] = cache_control
-    end
-    [status, headers, body]
-  end
-end
-
 # Communicates with the wwwhisper service to authorize each incomming
 # request. Acts as a proxy for requests to locations handled by
 # wwwhisper (/wwwhisper/auth and /wwwhisper/admin)
@@ -279,6 +251,35 @@ class WWWhisper
       @app.call(orig_req.env)
     end
   end
+
+
+  # An internal middleware used by Rack::WWWhisper to change directives
+  # that enable public caching into directives that enable private
+  # caching.
+  #
+  # To be on a safe side, all wwwhisper protected content is treated as
+  # sensitive and not publicly cacheable.
+  class NoPublicCache
+    def initialize(app)
+      @app = app
+    end
+
+    # If a response enables caching, makes sure it is private.
+    def call(env)
+      status, headers, body = @app.call(env)
+      if cache_control = headers['Cache-Control']
+        cache_control = cache_control.gsub(/public/, 'private')
+        if (not cache_control.include? 'private' and
+            cache_control.index(/max-age\s*=\s*0*[1-9]/))
+          # max-age > 0 without 'public' or 'private' directive is
+          # treated as 'public', so 'private' needs to be prepended.
+          cache_control.insert(0, 'private, ')
+        end
+        headers['Cache-Control'] = cache_control
+      end
+      [status, headers, body]
+    end
+  end # class NoPublicCache
 
 end # class WWWhisper
 
