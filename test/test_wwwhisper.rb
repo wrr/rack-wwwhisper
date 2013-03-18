@@ -8,6 +8,7 @@ require 'rack/test'
 require 'test/unit'
 require 'webmock/test_unit'
 require 'rack/wwwhisper'
+require 'rack/wwwhisper_version'
 
 ENV['RACK_ENV'] = 'test'
 
@@ -196,6 +197,16 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 
+  def test_library_version_passed_to_wwwhisper
+    path = '/foo/bar'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      with(:headers => {'User-Agent' => "Ruby-#{Rack::WWWHISPER_VERSION}"}).
+      to_return(granted())
+
+    get path
+    assert last_response.ok?
+  end
+
   def assert_path_normalized(normalized, requested, script_name=nil)
     stub_request(:get, full_url(@wwwhisper.auth_query(normalized))).
       to_return(granted())
@@ -266,11 +277,11 @@ class TestWWWhisper < Test::Unit::TestCase
     # X-Forwarded headers must be sent to wwwhisper backend.
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {
-             'Site-url' =>  "#{SITE_PROTO}://#{SITE_HOST}"
+             'Site-Url' =>  "#{SITE_PROTO}://#{SITE_HOST}"
            }).
       to_return(granted())
     stub_request(:get, full_url(path)).
-      with(:headers => {'Site-url' =>  "#{SITE_PROTO}://#{SITE_HOST}"}).
+      with(:headers => {'Site-Url' =>  "#{SITE_PROTO}://#{SITE_HOST}"}).
       to_return(:status => 200, :body => 'Admin page', :headers => {})
 
     get path

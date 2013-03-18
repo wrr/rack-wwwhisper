@@ -7,6 +7,7 @@
 require 'addressable/uri'
 require 'net/http/persistent'
 require 'rack/utils'
+require 'rack/wwwhisper_version'
 
 module Rack
 
@@ -28,9 +29,17 @@ class WWWhisper
   @@WWWHISPER_PREFIX = '/wwwhisper/'
   # Name prefix of cookies that are passed to wwwhisper.
   @@AUTH_COOKIES_PREFIX = 'wwwhisper'
+
   # Headers that are passed to wwwhisper ('Cookie' is handled
   # in a special way: only wwwhisper related cookies are passed).
-  # In addition, the current site url is passed in the Site-Url header.
+  #
+  # In addition, the current site URL is passed in the Site-Url header.
+  # This is needed to perform URL verification of Persona assertions and to
+  # construct Location headers in redirects.
+  #
+  # wwwhisper library version is passed in the User-Agent header. This
+  # is to warn the site owner if a vulnerability in the library is
+  # discovered and the library needs to be updated.
   @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'Origin',
                          'X-CSRFToken', 'X-Requested-With']
   @@DEFAULT_IFRAME = %Q[<script type="text/javascript" src="%s"> </script>
@@ -146,6 +155,7 @@ class WWWhisper
     copy_headers(rack_req.env, sub_req)
     scheme = rack_req.env['HTTP_X_FORWARDED_PROTO'] ||=  rack_req.scheme
     sub_req['Site-Url'] = "#{scheme}://#{rack_req.env['HTTP_HOST']}"
+    sub_req['User-Agent'] = "Ruby-#{Rack::WWWHISPER_VERSION}"
     if @wwwhisper_uri.user and @wwwhisper_uri.password
       sub_req.basic_auth(@wwwhisper_uri.user, @wwwhisper_uri.password)
     end

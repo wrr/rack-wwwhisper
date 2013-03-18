@@ -1,8 +1,10 @@
+# -*- encoding: utf-8 -*-
+require File.expand_path('../lib/rack/wwwhisper_version', __FILE__)
+
 Gem::Specification.new do |s|
   s.name        = 'rack-wwwhisper'
-  s.version     = '1.1.2'
+  s.version     = Rack::WWWHISPER_VERSION
   s.platform    = Gem::Platform::RUBY
-  s.date        = '2013-02-20'
   s.summary     = 'Persona based authorization layer for Rack applications.'
   s.description =
     'Middleware that uses wwwhisper service to authorize requests.'
