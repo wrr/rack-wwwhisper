@@ -2,8 +2,8 @@ To enable wwwhisper add-on, please send an email to
 wwwhisper-service@mixedbit.org.
 
 [wwwhisper](http://addons.heroku.com/wwwhisper) is an
-[add-on](http://addons.heroku.com) for authorizing access to Heroku
-applications.
+[add-on](http://addons.heroku.com) for authorizing access to
+Rails or Rack based Heroku applications.
 
 The add-on provides a web interface to specify emails of users that
 are allowed to access your application. Each visitor is presented with
@@ -14,8 +14,7 @@ site-specific passwords, making passwords management a non-issue for
 you.
 
 Integration with wwwhisper service is provided via Rack middleware
-which can be used with any Rails or Rack based application. This
-minimizes integration cost, there is no need to modify your
+This minimizes integration cost, there is no need to modify your
 application code and explicitly call wwwhisper API.
 
 You can visit [a demo site](https://wwwhisper-demo.herokuapp.com/)
