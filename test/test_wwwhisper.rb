@@ -70,9 +70,25 @@ class TestWWWhisper < Test::Unit::TestCase
 
   def test_wwwhisper_url_required
     ENV.delete('WWWHISPER_URL')
+    # Exception should not be raised during initialization, but during
+    # the first request.
+    @wwwhisper = Rack::WWWhisper.new(MockBackend.new(nil))
     assert_raise(StandardError) {
-      Rack::WWWhisper.new(@backend)
+      get '/foo/bar'
     }
+  end
+
+  def test_disable_wwwhisper
+    ENV.delete('WWWHISPER_URL')
+    ENV['WWWHISPER_DISABLE'] = "1"
+    # Configure MockBackend to make sure REMOTE_USER is not set.
+    @wwwhisper = Rack::WWWhisper.new(MockBackend.new(nil))
+
+    path = '/foo/bar'
+    get path
+    assert last_response.ok?
+    assert_equal 'Hello World', last_response.body
+    assert_nil last_response['User']
   end
 
   def test_auth_query_path
@@ -303,19 +319,6 @@ class TestWWWhisper < Test::Unit::TestCase
     get(path, {}, {'HTTP_HOST' => host})
     assert_equal 401, last_response.status
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
-  end
-
-  def test_disable_wwwhisper
-    ENV.delete('WWWHISPER_URL')
-    ENV['WWWHISPER_DISABLE'] = "1"
-    # Configure MockBackend to make sure REMOTE_USER is not set.
-    @wwwhisper = Rack::WWWhisper.new(MockBackend.new(nil))
-
-    path = '/foo/bar'
-    get path
-    assert last_response.ok?
-    assert_equal 'Hello World', last_response.body
-    assert_nil last_response['User']
   end
 
   def test_chunked_encoding_from_wwwhisper_removed

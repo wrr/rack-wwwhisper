@@ -61,18 +61,22 @@ class WWWhisper
   #    HTML documents (has a default value).
   def initialize(app)
     @app = app
-    if ENV['WWWHISPER_DISABLE'] == "1"
+    if not ENV['WWWHISPER_URL']
       def self.call(env)
+        # Delay check for WWWHISPER_DISABLE until the first
+        # request. This way Rails assets pipeline does not fail if
+        # environment variables are not set (as is the case on
+        # Heroku).
+        if ENV['WWWHISPER_DISABLE'] != '1'
+          raise(StandardError,
+                'WWWHISPER_URL nor WWWHISPER_DISABLE environment variable set')
+        end
         @app.call(env)
       end
       return
     end
 
     @app = NoPublicCache.new(app)
-
-    if not ENV['WWWHISPER_URL']
-      raise StandardError, 'WWWHISPER_URL environment variable not set'
-    end
 
     # net/http/persistent connections are thread safe.
     @http = http_init('wwwhisper')
