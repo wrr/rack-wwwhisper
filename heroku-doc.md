@@ -1,6 +1,3 @@
-To enable wwwhisper add-on, please send an email to
-wwwhisper-service@mixedbit.org.
-
 [wwwhisper](http://addons.heroku.com/wwwhisper) is an
 [add-on](http://addons.heroku.com) for authorizing access to
 Rails or Rack based Heroku applications.
@@ -60,14 +57,15 @@ And then update application dependencies with bundler.
 
 ###Enabling wwwhisper middleware for a Rails application
 
-For a Rails application add the following line to
+For a Rails application put the following line at the end of
 `config/environments/production.rb`.
 
     :::ruby
-    config.middleware.insert_after "Rack::Lock", "Rack::WWWhisper"
+    config.middleware.insert 0, "Rack::WWWhisper"
 
-You can consult [a
-commit](https://github.com/wrr/typo/commit/70acd99924dd59fab45efccc426233a2d9ee4f7e)
+The line makes wwwhisper the first middleware in the Rack middleware
+chain. You can consult [a
+commit](https://github.com/wrr/typo/commit/6949e4f65aa5b39e1d36f0fefe21a7a360f83bf4)
 that enabled wwwhisper for a Rails based Typo blog.
 
 ###Enabling wwwhisper middleware for other Rack based application
@@ -87,13 +85,16 @@ that enabled wwwhisper for a Sinatra application.
 
 Order of Rack middleware matters. Authentication should be
 performed early, before any middleware that produces sensitive
-responses is invoked.
+responses is invoked. Rails allows to check middleware order with a command.
+
+    :::term
+    RAILS_ENV=production; foreman run rake middleware
 
 wwwhisper by default inserts an iframe to HTML responses. The iframe
-contains an email of currently logged in user and a logout button. If
-Rack is configured to compress responses, compression middleware
-should be put before wwwhisper, otherwise the iframe won't be
-inserted.
+contains an email of a currently logged in user and a logout
+button. If Rack is configured to compress responses, compression
+middleware should be put before wwwhisper, otherwise the iframe won't
+be inserted.
 
 ### Push the configuration and test the authorization
 
