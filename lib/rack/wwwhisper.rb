@@ -11,11 +11,11 @@ require 'rack/wwwhisper_version'
 
 module Rack
 
-# Communicates with the wwwhisper service to authorize each incomming
+# Communicates with the wwwhisper service to authorize each incoming
 # request. Acts as a proxy for requests to locations handled by
 # wwwhisper (/wwwhisper/auth and /wwwhisper/admin)
 #
-# For each incomming request an authorization query is sent.
+# For each incoming request an authorization query is sent.
 # The query contains a normalized path that a request is
 # trying to access and wwwhisper session cookies. The
 # query result determines the action to be performed:
@@ -24,6 +24,8 @@ module Rack
 #       page is returned.
 # [403] the user is not authorized, request is denied, error is returned.
 # [any other] error while communicating with wwwhisper, request is denied.
+#
+# This class is thread safe, it can handle multiple simultaneous requests.
 class WWWhisper
   # Path prefix of requests that are passed to wwwhisper.
   @@WWWHISPER_PREFIX = '/wwwhisper/'
@@ -72,6 +74,7 @@ class WWWhisper
       raise StandardError, 'WWWHISPER_URL environment variable not set'
     end
 
+    # net/http/persistent connections are thread safe.
     @http = http_init('wwwhisper')
     @wwwhisper_uri = parse_uri(ENV['WWWHISPER_URL'])
 
@@ -127,7 +130,7 @@ class WWWhisper
   def parse_uri(uri)
     parsed_uri = Addressable::URI.parse(uri)
     # If port is not specified, net/http/persistent uses port 80 for
-    # https connections which is counterintuitive.
+    # https connections which is counter-intuitive.
     parsed_uri.port ||= parsed_uri.default_port
     parsed_uri
   end
