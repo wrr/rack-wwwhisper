@@ -160,7 +160,7 @@ wwwhisper can be removed via the CLI.
 
 wwwhisper service stores emails of users allowed to access your
 application. The emails are used ONLY to authorize access to the
-application. The service does not sent any messages to the email
+application. The service does not send any messages to the email
 addresses, emails are not disclosed to third parties.
 
 wwwhisper does not store information which users accessed which
