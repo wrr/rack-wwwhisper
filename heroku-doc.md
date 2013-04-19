@@ -83,9 +83,9 @@ that enabled wwwhisper for a Sinatra application.
 
 ### Rack middleware order
 
-Order of Rack middleware matters. Authentication should be
-performed early, before any middleware that produces sensitive
-responses is invoked. Rails allows to check middleware order with a command.
+Order of Rack middleware matters. Authorization should be performed
+early, before any middleware that produces sensitive responses is
+invoked. Rails allows to check middleware order with a command.
 
     :::term
     RAILS_ENV=production; foreman run rake middleware
@@ -182,7 +182,7 @@ can be also reported via [github](https://github.com/wrr/wwwhisper).
   Rack environment variable `REMOTE_USER`.
 * wwwhisper authorizes access to content served by a Heroku
   application. If you put sensitive content on external servers that do
-  not require authorization (for example Amazon CloudFront), wwwhisper
+  not require authorization (for example public Amazon S3 bucket), wwwhisper
   won't be able to restrict access to such content.
 * wwwhisper is open source, see
   [the project repository] (https://github.com/wrr/wwwhisper)
