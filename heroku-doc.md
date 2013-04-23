@@ -1,6 +1,6 @@
 [wwwhisper](http://addons.heroku.com/wwwhisper) is an
 [add-on](http://addons.heroku.com) for authorizing access to
-Rails or Rack based Heroku applications.
+Rails or other Rack based Heroku applications.
 
 The add-on provides a web interface to specify emails of users that
 are allowed to access your application. Each visitor is presented with
@@ -10,7 +10,7 @@ out of a box with any modern browser. It removes the need for
 site-specific passwords, making passwords management a non-issue for
 you.
 
-Integration with wwwhisper service is provided via Rack middleware
+Integration with wwwhisper service is provided via Rack middleware.
 This minimizes integration cost, there is no need to modify your
 application code and explicitly call wwwhisper API.
 
@@ -64,7 +64,7 @@ For a Rails application put the following line at the end of
     config.middleware.insert 0, "Rack::WWWhisper"
 
 The line makes wwwhisper the first middleware in the Rack middleware
-chain. You can consult [a
+chain. You can take a look at [a
 commit](https://github.com/wrr/typo/commit/6949e4f65aa5b39e1d36f0fefe21a7a360f83bf4)
 that enabled wwwhisper for a Rails based Typo blog.
 
@@ -77,7 +77,7 @@ For other Rack based applications add the following two lines to the
     require 'rack/wwwhisper'
     use Rack::WWWhisper
 
-You can consult [a
+You can take a look at [a
 commit](https://github.com/wrr/heroku-sinatra-app/commit/f152a4370d6b1c881f8dd60a91a3f050a8c6389b)
 that enabled wwwhisper for a Sinatra application.
 
