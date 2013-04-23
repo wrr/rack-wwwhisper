@@ -110,12 +110,13 @@ class WWWhisper
 
     if auth_resp.code == '200'
       debug req, 'access granted'
-      env['REMOTE_USER'] = auth_resp['User']
+      user = auth_resp['User']
+      env['REMOTE_USER'] = user if user
       status, headers, body = dispatch(req)
       if should_inject_iframe(status, headers)
         body = inject_iframe(headers, body)
       end
-      headers['User'] = auth_resp['User']
+      headers['User'] = user if user
       [status, headers, body]
     else
       debug req, {

@@ -68,6 +68,11 @@ class TestWWWhisper < Test::Unit::TestCase
     {:status => 200, :body => '', :headers => {'User' => TEST_USER}}
   end
 
+  def open_location_granted()()
+    # Open locations allow not authenticated access, 'User' can be not set
+    {:status => 200, :body => '', :headers => {}}
+  end
+
   def test_wwwhisper_url_required
     ENV.delete('WWWHISPER_URL')
     # Exception should not be raised during initialization, but during
@@ -88,7 +93,7 @@ class TestWWWhisper < Test::Unit::TestCase
     get path
     assert last_response.ok?
     assert_equal 'Hello World', last_response.body
-    assert_nil last_response['User']
+    assert !last_response.original_headers.has_key?('User')
   end
 
   def test_auth_query_path
@@ -105,6 +110,20 @@ class TestWWWhisper < Test::Unit::TestCase
     assert last_response.ok?
     assert_equal 'Hello World', last_response.body
     assert_equal TEST_USER, last_response['User']
+    assert_requested :get, full_url(@wwwhisper.auth_query(path))
+  end
+
+  def test_open_location_request_allowed
+    # Configure MockBackend to make sure REMOTE_USER is not set.
+    @wwwhisper = Rack::WWWhisper.new(MockBackend.new(nil))
+    path = '/foo/bar'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      to_return(open_location_granted())
+
+    get path
+    assert last_response.ok?
+    assert_equal 'Hello World', last_response.body
+    assert !last_response.original_headers.has_key?('User')
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 
