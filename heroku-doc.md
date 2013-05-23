@@ -16,8 +16,7 @@ application code and explicitly call wwwhisper API.
 
 You can visit [a demo site](https://wwwhisper-demo.herokuapp.com/)
 authorized by the wwwhisper add-on. The site is configured to allow
-everyone access,  sign-in with your email or with any email in
-the form `anything@mockmyid.com`.
+everyone access, but still require authorization.
 
 ## Provisioning the add-on
 
@@ -119,7 +118,7 @@ config file for development (for example
 to do anything, otherwise you need to set `WWWHISPER_DISABLE=1`
 environment variable.
 
-If you use [Foreman](config-vars#local_setup) to start a local server,
+If you use [Foreman](config-vars#local-setup) to start a local server,
 execute the following command in the application directory.
 
     :::term
@@ -132,8 +131,11 @@ If you don't use Foreman, execute.
 
 #### Use wwwhisper locally
 
-If you want to use the wwwhisper service locally, copy WWWHISPER_URL
-variable from the Heroku config. If you use Foreman, execute.
+To use the wwwhisper service locally, use the wwwhisper admin to allow
+logins from a local address. Go to the `Site settings` menu and add
+the local address (for example `http://localhost:8080`) to the list of
+allowed addresses. Next, copy the `WWWHISPER_URL` variable from the
+Heroku config to your local config. If you use Foreman, execute.
 
     :::term
     $ echo WWWHISPER_URL=`heroku config:get WWWHISPER_URL` >> .env
@@ -169,11 +171,13 @@ locations of your application.
 ## Support
 
 wwwhisper support and runtime issues should be submitted via one of
-the [Heroku Support channels](support-channels). Any non-support
-related issues or product feedback is welcome at
-wwwhisper-service@mixedbit.org. Issues and feature requests
-related to wwwhisper project in general and not limited to the add-on
-can be also reported via [github](https://github.com/wrr/wwwhisper).
+the [Heroku Support channels](support-channels). Please CC
+wwwhisper-service@mixedbit.org.
+
+Any non-support related issues or product feedback is welcome at
+wwwhisper-service@mixedbit.org. Issues and feature requests related to
+wwwhisper project in general and not limited to the add-on can be also
+reported via [github](https://github.com/wrr/wwwhisper).
 
 ## Final remarks
 
