@@ -23,7 +23,8 @@ everyone access, but still require authorization.
 wwwhisper can be attached to a Heroku application via the CLI.
 
     :::term
-    $ heroku addons:add wwwhisper [--admin=your_email]
+    $ heroku addons:add wwwhisper:starter[or basic or plus] [--admin=your_email]
+
 
 `--admin` is an optional parameter that specifies who should be
 allowed to initially access the application. If `--admin` is not
