@@ -189,6 +189,7 @@ class WWWhisper
       sub_req.body_stream = rack_req.body
       sub_req.content_length =
         rack_req.content_length if rack_req.content_length
+      # Pass Content-Type header with requests that have body.
       sub_req.content_type = rack_req.content_type if rack_req.content_type
     end
   end

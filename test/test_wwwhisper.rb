@@ -258,6 +258,7 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_path_normalized '/', '/'
     assert_path_normalized '/foo/bar', '/foo/bar'
     assert_path_normalized '/foo/bar/', '/foo/bar/'
+    assert_path_normalized '/foo/', '/foo/'
 
     assert_path_normalized '/foo/', '/auth/api/login/../../../foo/'
     assert_path_normalized '/', '//'
@@ -266,7 +267,6 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_path_normalized '/', '/./././'
     assert_path_normalized '/bar', '/foo/./bar/../../bar'
     assert_path_normalized '/foo/', '/foo/bar/..'
-    assert_path_normalized '/foo/', '/foo/'
     assert_path_normalized '/', '/./././/'
   end
 
@@ -309,7 +309,7 @@ class TestWWWhisper < Test::Unit::TestCase
   def test_site_url
     path = '/wwwhisper/admin/index.html'
 
-    # X-Forwarded headers must be sent to wwwhisper backend.
+    # Site-Url header must be sent to the wwwhisper backend.
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       with(:headers => {
              'Site-Url' =>  "#{SITE_PROTO}://#{SITE_HOST}"
@@ -352,6 +352,7 @@ class TestWWWhisper < Test::Unit::TestCase
   end
 
   def test_public_caching_disabled
+    # TODO: this should be done only for plain HTTP requests.
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
       to_return(granted())
