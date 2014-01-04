@@ -1,6 +1,6 @@
 [wwwhisper](http://addons.heroku.com/wwwhisper) is an
-[add-on](http://addons.heroku.com) for authorizing access to
-Rails or other Rack based Heroku applications.
+[add-on](http://addons.heroku.com) for authorizing access to Node.js,
+Ruby on Rails and other Ruby Rack based applications on Heroku.
 
 The add-on provides a web interface to specify emails of users that
 are allowed to access your application. Each visitor is presented with
@@ -10,9 +10,10 @@ out of a box with any modern browser. It removes the need for
 site-specific passwords, making passwords management a non-issue for
 you.
 
-Integration with wwwhisper service is provided via Rack middleware.
-This minimizes integration cost, there is no need to modify your
-application code and explicitly call wwwhisper API.
+Integration with wwwhisper service is provided via Ruby Rack and
+Node.js Connect middlewares.  This minimizes integration cost, there
+is no need to modify your application code and explicitly call
+wwwhisper API.
 
 You can visit [a demo site](https://wwwhisper-demo.herokuapp.com/)
 authorized by the wwwhisper add-on. The site is configured to allow
@@ -22,9 +23,9 @@ everyone access, but still require authorization.
 
 wwwhisper can be attached to a Heroku application via the CLI.
 
-    :::term
-    $ heroku addons:add wwwhisper:starter[or basic or plus] [--admin=your_email]
-
+```term
+$ heroku addons:add wwwhisper:starter[or basic or plus] [--admin=your_email]
+```
 
 `--admin` is an optional parameter that specifies who should be
 allowed to initially access the application. If `--admin` is not
@@ -37,31 +38,34 @@ available in the app configuration and will contain the URL to
 communicate with the wwwhisper service. This can be confirmed using the
 `heroku config:get` command.
 
-    :::term
-    $ heroku config:get WWWHISPER_URL
-    https://user:password@domain
-
+```term
+$ heroku config:get WWWHISPER_URL
+https://user:password@domain
+```
 
 ## Using with Ruby on Rails or other Rack based applications
 
 All Ruby applications need to add the following entry into their
 `Gemfile`.
 
-    :::ruby
-    gem 'rack-wwwhisper', '~> 1.0'
+```ruby
+gem 'rack-wwwhisper', '~> 1.0'
+```
 
 And then update application dependencies with bundler.
 
-    :::term
-    $ bundle install
+```term
+$ bundle install
+```
 
 ###Enabling wwwhisper middleware for a Rails application
 
 For a Rails application put the following line at the end of
 `config/environments/production.rb`.
 
-    :::ruby
-    config.middleware.insert 0, "Rack::WWWhisper"
+```ruby
+config.middleware.insert 0, "Rack::WWWhisper"
+```
 
 The line makes wwwhisper the first middleware in the Rack middleware
 chain. You can take a look at [a
@@ -73,9 +77,10 @@ that enabled wwwhisper for a Rails based Typo blog.
 For other Rack based applications add the following two lines to the
 `config.ru`.
 
-    :::ruby
-    require 'rack/wwwhisper'
-    use Rack::WWWhisper
+```ruby
+require 'rack/wwwhisper'
+use Rack::WWWhisper
+```
 
 You can take a look at [a
 commit](https://github.com/wrr/heroku-sinatra-app/commit/f152a4370d6b1c881f8dd60a91a3f050a8c6389b)
@@ -87,8 +92,9 @@ Order of Rack middleware matters. Authorization should be performed
 early, before any middleware that produces sensitive responses is
 invoked. Rails allows to check middleware order with a command.
 
-    :::term
-    RAILS_ENV=production; foreman run rake middleware
+```term
+RAILS_ENV=production; foreman run rake middleware
+```
 
 wwwhisper by default inserts an iframe to HTML responses. The iframe
 contains an email of a currently logged in user and a logout
@@ -98,9 +104,10 @@ be inserted.
 
 ### Push the configuration and test the authorization
 
-    :::term
-    $ git commit -m "Enable wwwhisper authorization" -a
-    $ git push heroku master
+```term
+$ git commit -m "Enable wwwhisper authorization" -a
+$ git push heroku master
+```
 
 Visit `https://yourapp-name.herokuapp.com/` you should be presented
 with a login page. Sign-in with your email. Visit
@@ -122,13 +129,15 @@ environment variable.
 If you use [Foreman](config-vars#local-setup) to start a local server,
 execute the following command in the application directory.
 
-    :::term
-    $ echo WWWHISPER_DISABLE=1 >> .env
+```term
+$ echo WWWHISPER_DISABLE=1 >> .env
+```
 
 If you don't use Foreman, execute.
 
-    :::term
-    $ export WWWHISPER_DISABLE=1
+```term
+$ export WWWHISPER_DISABLE=1
+```
 
 #### Use wwwhisper locally
 
@@ -138,26 +147,60 @@ the local address (for example `http://localhost:8080`) to the list of
 allowed addresses. Next, copy the `WWWHISPER_URL` variable from the
 Heroku config to your local config. If you use Foreman, execute.
 
-    :::term
-    $ echo WWWHISPER_URL=`heroku config:get WWWHISPER_URL` >> .env
+```term
+$ echo WWWHISPER_URL=`heroku config:get WWWHISPER_URL` >> .env
+```
 
-<p class="warning" markdown="1"> Credentials and other sensitive
-configuration values should not be committed to source-control. In Git
-exclude the .env file with: `echo .env >> .gitignore`. </p>
+> warning
+> Credentials and other sensitive configuration values should not be committed to source-control. In Git exclude the .env file with: `echo .env >> .gitignore`.
 
 If you don't use Foreman, execute.
 
-    :::term
-    $ export WWWHISPER_URL=`heroku config:get WWWHISPER_URL`
+```term
+$ export WWWHISPER_URL=`heroku config:get WWWHISPER_URL`
+```
+
+## Using with Node.js
+
+wwwhisper works with Node.js applications that use Express or Connect
+frameworks. Node version 0.10.x is required. To configure the add-on,
+add the following line into the `dependencies` section of the
+`package.json`.
+
+```javascript
+"connect-wwwhisper": "*",
+```
+
+Next, add the following lines to the application main source file.
+
+```javascript
+var wwwhisper = require('connect-wwwhisper');
+// app holds a reference to express or connect framework, it
+// may be named differently in your source file.
+app.use(wwwhisper());
+```
+
+Make sure wwwhisper middleware is put before any middleware that
+produces sensitive responses. You can take a look at [a
+commit](https://github.com/wrr/heroku-node-app/commit/46aefa3f5770fc91226162aa496bb088d7eccdb5)
+that enabled wwwhisper for an Express application.
+
+### Push the configuration and test the authorization
+[Followe these steps.](#push-the-configuration-and-test-the-authorization)
+
+### Local setup
+[Follow these steps.](#local-setup)
 
 ## Removing the add-on
 
 wwwhisper can be removed via the CLI.
 
-<div class="warning" markdown="1">This will destroy all associated data and cannot be undone!</div>
+> warning
+> This will destroy all associated data and cannot be undone!
 
-    :::term
-    $ heroku addons:remove wwwhisper
+```term
+$ heroku addons:remove wwwhisper
+```
 
 ## A privacy note
 
