@@ -232,6 +232,18 @@ class TestWWWhisper < Test::Unit::TestCase
     assert_requested :get, full_url(@wwwhisper.auth_query(path))
   end
 
+  def test_wwwhisper_cookies_missing_other_present
+    path = '/foo/bar'
+    stub_request(:get, full_url(@wwwhisper.auth_query(path))).
+      to_return(granted())
+
+    get(path, {},
+        {'HTTP_COOKIE' => 'session=123;'})
+    assert last_response.ok?
+    assert_equal 'Hello World', last_response.body
+    assert_requested :get, full_url(@wwwhisper.auth_query(path))
+  end
+
   def test_library_version_passed_to_wwwhisper
     path = '/foo/bar'
     stub_request(:get, full_url(@wwwhisper.auth_query(path))).
