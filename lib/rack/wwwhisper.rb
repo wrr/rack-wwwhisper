@@ -129,7 +129,7 @@ class WWWhisper
 
   private
   def debug(req, message)
-    req.logger.debug "wwwhisper #{message}" if req.logger
+    req.logger.debug "wwwhisper #{message}" if (req.respond_to?(:logger) && req.logger)
   end
 
   def parse_uri(uri)
