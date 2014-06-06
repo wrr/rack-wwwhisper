@@ -190,10 +190,10 @@ commit](https://github.com/wrr/heroku-node-app/commit/46aefa3f5770fc91226162aa49
 that enabled wwwhisper for an Express application.
 
 ### Push the configuration and test the authorization
-[Follow these steps.](#push-the-configuration-and-test-the-authorization)
+[Follow these steps.](#using-with-ruby-on-rails-or-other-rack-based-applications-push-the-configuration-and-test-the-authorization)
 
 ### Local setup
-[Follow these steps.](#local-setup)
+[Follow these steps.](#using-with-ruby-on-rails-or-other-rack-based-applications-local-setup)
 
 ## Removing the add-on
 
