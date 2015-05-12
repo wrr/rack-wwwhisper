@@ -23,5 +23,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'net-http-persistent'
   s.add_development_dependency 'rack-test'
   s.add_development_dependency 'webmock'
+  s.add_development_dependency 'test-unit'
   s.add_development_dependency 'rake'
 end
