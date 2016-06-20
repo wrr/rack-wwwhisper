@@ -84,7 +84,7 @@ class WWWhisper
 
     @wwwhisper_iframe = ENV['WWWHISPER_IFRAME'] ||
       sprintf(@@DEFAULT_IFRAME, wwwhisper_path('auth/iframe.js'))
-    @wwwhisper_iframe_bytesize = Rack::Utils::bytesize(@wwwhisper_iframe)
+    @wwwhisper_iframe_bytesize = @wwwhisper_iframe.bytesize
   end
 
   # Exposed for tests.
@@ -217,7 +217,7 @@ class WWWhisper
       headers.delete('Content-Length')
       headers.delete('Content-Type')
     elsif (body.length || 0) != 0 and not headers['Content-Length']
-      headers['Content-Length'] = Rack::Utils::bytesize(body).to_s
+      headers['Content-Length'] = body.bytesize.to_s
     end
     [ code, headers, [body] ]
   end
