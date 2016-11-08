@@ -35,9 +35,10 @@ class WWWhisper
   # Headers that are passed to wwwhisper ('Cookie' is handled
   # in a special way: only wwwhisper related cookies are passed).
   #
-  # In addition, the current site URL is passed in the Site-Url header.
-  # This is needed to perform URL verification of Persona assertions and to
-  # construct Location headers in redirects.
+  # In addition, the current site URL is passed in the Site-Url
+  # header. This is needed to disallow access with access tokens
+  # generated for other sites and to construct Location headers in
+  # redirects.
   #
   # wwwhisper library version is passed in the User-Agent header. This
   # is to warn the site owner if a vulnerability in the library is

@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.name        = 'rack-wwwhisper'
   s.version     = Rack::WWWHISPER_VERSION
   s.platform    = Gem::Platform::RUBY
-  s.summary     = 'Persona based authorization layer for Rack applications.'
+  s.summary     = 'Verified email based authorization for Rack applications.'
   s.description = 'Middleware uses wwwhisper service to authorize requests.'
   s.author      = 'Jan Wrobel'
   s.email       = 'wrr@mixedbit.org'
