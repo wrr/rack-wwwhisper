@@ -18,7 +18,11 @@ Gem::Specification.new do |s|
   s.test_files  = ['test/test_wwwhisper.rb']
   s.homepage    = 'https://github.com/wrr/rack-wwwhisper'
   s.license     = 'BSD'
-  s.add_runtime_dependency 'rack', '>= 1.0'
+  if RUBY_VERSION.match('(^2\.[0|1]\.)|1\.9\.')
+    s.add_runtime_dependency 'rack', '~> 1.0'
+  else
+    s.add_runtime_dependency 'rack', '>= 2.0'
+  end
   s.add_runtime_dependency 'addressable', '~> 2.0'
   s.add_runtime_dependency 'net-http-persistent', '< 3.0'
   s.add_development_dependency 'rack-test'
