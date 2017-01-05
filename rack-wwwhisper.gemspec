@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.summary     = 'Verified email based authorization for Rack applications.'
   s.description = 'Middleware uses wwwhisper service to authorize requests.'
   s.author      = 'Jan Wrobel'
-  s.email       = 'wrr@mixedbit.org'
+  s.email       = 'jan@wwwhisper.io'
   s.files       = [
                    'lib/rack/wwwhisper.rb',
                    'lib/rack/wwwhisper_version.rb',
@@ -19,9 +19,12 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/wrr/rack-wwwhisper'
   s.license     = 'BSD'
   if RUBY_VERSION.match('^2\.[0|1]\.')
+    # Allow only 1.0
     s.add_runtime_dependency 'rack', '~> 1.0'
   else
-    s.add_runtime_dependency 'rack', '>= 2.0'
+    # Allow 1.0 (required for example by older versions of Rails) or
+    # 2.0.
+    s.add_runtime_dependency 'rack', '>= 1.0'
   end
   s.add_runtime_dependency 'addressable', '~> 2.0'
   s.add_runtime_dependency 'net-http-persistent', '< 3.0'

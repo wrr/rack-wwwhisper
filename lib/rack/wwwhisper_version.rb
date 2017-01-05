@@ -1,3 +1,3 @@
 module Rack
-  WWWHISPER_VERSION = '1.1.11'
+  WWWHISPER_VERSION = '1.1.12'
 end

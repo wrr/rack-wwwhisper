@@ -1,5 +1,5 @@
 # Rack middleware that uses wwwhisper service to authorize visitors.
-# Copyright (C) 2013 Jan Wrobel <wrr@mixedbit.org>
+# Copyright (C) 2013-2017 Jan Wrobel <jan@wwwhisper.io>
 #
 # This program is freely distributable under the terms of the
 # Simplified BSD License. See COPYING.
