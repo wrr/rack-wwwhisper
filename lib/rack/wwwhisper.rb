@@ -80,7 +80,7 @@ class WWWhisper
     @app = NoPublicCache.new(app)
 
     # net/http/persistent connections are thread safe.
-    @http = http_init('wwwhisper')
+    @http = http_init()
     @wwwhisper_uri = parse_uri(ENV['WWWHISPER_URL'])
 
     @wwwhisper_iframe = ENV['WWWHISPER_IFRAME'] ||
@@ -141,8 +141,8 @@ class WWWhisper
     parsed_uri
   end
 
-  def http_init(connection_id)
-    http = Net::HTTP::Persistent.new(connection_id)
+  def http_init()
+    http = Net::HTTP::Persistent.new(name: 'wwwhisper')
     store = OpenSSL::X509::Store.new()
     store.set_default_paths
     http.cert_store = store

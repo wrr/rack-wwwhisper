@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
     s.add_runtime_dependency 'rack', '>= 1.0'
   end
   s.add_runtime_dependency 'addressable', '~> 2.0'
-  s.add_runtime_dependency 'net-http-persistent', '< 3.0'
+  s.add_runtime_dependency 'net-http-persistent', '< 5.0'
   s.add_development_dependency 'rack-test'
   s.add_development_dependency 'webmock'
   s.add_development_dependency 'test-unit'
