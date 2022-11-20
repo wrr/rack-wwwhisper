@@ -196,7 +196,13 @@ class WWWhisper
   end
 
   def sub_response_headers_to_rack(rack_req, sub_resp)
-    rack_headers = Rack::Utils::HeaderHash.new()
+    if Rack.const_defined?('Headers')
+        # Rack 3+
+        rack_headers = Rack::Headers.new()
+    else
+      # Older Rack versions
+      rack_headers = Rack::Utils::HeaderHash.new()
+    end
     sub_resp.each_capitalized do |header, value|
       # If sub request returned chunked response, remove the header
       # (chunks will be combined and returned with 'Content-Length).
