@@ -45,7 +45,7 @@ class WWWhisper
   # discovered and the library needs to be updated.
   @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'Origin',
                          'X-CSRFToken', 'X-Requested-With']
-  @@DEFAULT_IFRAME = %Q[<script type="text/javascript" src="%s"> </script>
+  @@DEFAULT_IFRAME = %Q[<script src="%s"> </script>
 ]
 
   # Following environment variables are recognized:
