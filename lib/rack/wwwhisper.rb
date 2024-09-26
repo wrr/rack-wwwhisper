@@ -43,8 +43,8 @@ class WWWhisper
   # wwwhisper library version is passed in the User-Agent header. This
   # is to warn the site owner if a vulnerability in the library is
   # discovered and the library needs to be updated.
-  @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Cookie', 'Origin',
-                         'X-CSRFToken', 'X-Requested-With']
+  @@FORWARDED_HEADERS = ['Accept', 'Accept-Language', 'Accept-Encoding',
+                         'Cookie', 'Origin', 'X-CSRFToken', 'X-Requested-With']
   @@DEFAULT_IFRAME = %Q[<script src="%s"> </script>
 ]
 
