@@ -196,22 +196,25 @@ class WWWhisper
   end
 
   def sub_response_headers_to_rack(rack_req, sub_resp)
+    cookies = sub_resp.get_fields('Set-Cookie')
     if Rack.const_defined?('Headers')
         # Rack 3+
         rack_headers = Rack::Headers.new()
+        # Multiple Set-Cookie headers need to be set as an array (new
+        # Rack SPEC)
+        rack_headers['Set-Cookie'] = cookies if cookies
     else
       # Older Rack versions
       rack_headers = Rack::Utils::HeaderHash.new()
+      # Multiple Set-Cookie headers need to be set as a single value
+      # separated by \n (old Rack SPEC)
+      rack_headers['Set-Cookie'] = cookies.join("\n") if cookies
     end
     sub_resp.each_capitalized do |header, value|
       # If sub request returned chunked response, remove the header
       # (chunks will be combined and returned with 'Content-Length).
       rack_headers[header] = value if header !~ /Transfer-Encoding|Set-Cookie/
     end
-    # Multiple Set-Cookie headers need to be set as a single value
-    # separated by \n (see Rack SPEC).
-    cookies = sub_resp.get_fields('Set-Cookie')
-    rack_headers['Set-Cookie'] = cookies.join("\n") if cookies
     return rack_headers
   end
 
